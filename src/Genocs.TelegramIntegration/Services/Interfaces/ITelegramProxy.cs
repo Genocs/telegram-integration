@@ -1,10 +1,10 @@
-﻿using Genocs.TelegramIntegration.Contracts.Models;
+﻿using Telegram.BotAPI.GettingUpdates;
 
 namespace Genocs.TelegramIntegration.Services.Interfaces;
 
 public interface ITelegramProxy
 {
     Task PullUpdatesAsync();
-    Task ProcessMessageAsync(TelegramMessage message);
+    Task ProcessMessageAsync(Update message);
     Task LogMessageAsync(string message);
 }

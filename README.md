@@ -48,3 +48,20 @@ api-workbench.rest
 
 Use this file inside Visual Studio code with [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) plugin 
 
+## Docker image
+
+``` sh
+docker build -t genocs/telegram_integration-webapi:1.0.0 -t genocs/telegram_integration-webapi:latest -f .\webapi.dockerfile .
+
+docker tag genocs/telegram_integration-webapi genocs/telegram_integration-webapi:1.0.0
+docker tag genocs/telegram_integration-webapi genocs/telegram_integration-webapi:latest
+
+docker push genocs/telegram_integration-webapi:1.0.0
+docker push genocs/telegram_integration-webapi:latest
+``` 
+
+
+
+``` sh
+docker-compose -f .\docker-compose.yml build
+``` 

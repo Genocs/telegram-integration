@@ -23,6 +23,8 @@ public class TelegramProxy : ITelegramProxy
     private readonly TelegramSettings _telegramOptions;
     private readonly OpenAISettings _openAIOptions;
 
+    private readonly List<string> _stopTags = new List<string> { @"/start" };
+
     public TelegramProxy(IOptions<TelegramSettings> telegramOptions,
         ILogger<TelegramProxy> logger,
         IOptions<OpenAISettings> openAIOptions,
@@ -167,6 +169,15 @@ public class TelegramProxy : ITelegramProxy
         }
     }
 
+    public bool CanCallGPT3(string textMessage)
+    {
+        if (string.IsNullOrWhiteSpace(textMessage)) return false;
+        if (_stopTags.Contains(textMessage)) return false;
+
+        return true;
+
+    }
+
     public async Task<OpenAIResponse?> CallGPT3Async(OpenAIRequest request)
     {
         using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _openAIOptions.Url)
@@ -191,7 +202,7 @@ public class TelegramProxy : ITelegramProxy
         return null;
     }
 
-    public async Task ProcessMessageAsync(TelegramMessage message)
+    public async Task ProcessMessageAsync(Update message)
     {
         if (message == null)
         {
@@ -204,8 +215,6 @@ public class TelegramProxy : ITelegramProxy
             _logger.LogError("ProcessMessageAsync received null message.Message");
             return;
         }
-
-        BotClient botClient = new BotClient(_telegramOptions.Token);
 
         var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == message.UpdateId);
 
@@ -221,21 +230,63 @@ public class TelegramProxy : ITelegramProxy
         // Payment
         if (message.PreCheckoutQuery != null)
         {
+            BotClient botClient = new BotClient(_telegramOptions.Token);
             botClient.AnswerPreCheckoutQuery(message.PreCheckoutQuery.Id, true);
         }
 
         // Message
-        if (message.Message != null)
+        if (message.Message == null)
         {
-            var response = await CallGPT3Async(new OpenAIRequest { prompt = message.Message.Text });
+            return;
+        }
 
-            if (response != null && response.Choices != null && response.Choices.Any())
+        if (message.Message.Photo != null)
+        {
+            BotClient botClient = new BotClient(_telegramOptions.Token);
+
+            if (string.IsNullOrEmpty(message.Message.Caption))
             {
-                var choice = response.Choices.FirstOrDefault();
-                if (choice != null)
-                {
-                    var res = botClient.SendMessage(message.Message.From.Id, choice.text);
-                }
+                var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
+            }
+
+            if (!string.IsNullOrEmpty(message.Message.Caption) && message.Message.Caption.ToLower().Contains("tff"))
+            {
+                var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
+            }
+            return;
+        }
+
+        if (message.Message.Document != null)
+        {
+            BotClient botClient = new BotClient(_telegramOptions.Token);
+
+            if (string.IsNullOrEmpty(message.Message.Caption))
+            {
+                var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
+            }
+
+            if (!string.IsNullOrEmpty(message.Message.Caption) && message.Message.Caption.ToLower().Contains("tff"))
+            {
+                var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, thanks for send me image. Starst process it and I'll let you know!");
+            }
+            return;
+        }
+
+        if (!CanCallGPT3(message.Message.Text))
+        {
+            return;
+        }
+
+        var response = await CallGPT3Async(new OpenAIRequest { prompt = message.Message.Text });
+
+        if (response != null && response.Choices != null && response.Choices.Any())
+        {
+            var choice = response.Choices.FirstOrDefault();
+            if (choice != null)
+            {
+                BotClient botClient = new BotClient(_telegramOptions.Token);
+
+                var res = botClient.SendMessage(message.Message.From.Id, choice.text);
             }
         }
     }
@@ -244,6 +295,5 @@ public class TelegramProxy : ITelegramProxy
     {
         GenocsChat chatMessage = new GenocsChat { Message = message };
         await _mongoDbRepository.InsertAsync(chatMessage);
-
     }
 }

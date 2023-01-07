@@ -2,6 +2,7 @@ using Genocs.TelegramIntegration.Contracts.Models;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using Telegram.BotAPI.GettingUpdates;
 
 namespace Genocs.TelegramIntegration.WebApi.Controllers;
 
@@ -19,7 +20,7 @@ public class WebHookController : ControllerBase
     }
 
     [HttpPost()]
-    public async Task<IActionResult> PostUpdates(TelegramMessage message)
+    public async Task<IActionResult> PostUpdates(Update message)
     {
         _logger.LogCritical(JsonSerializer.Serialize(message));
         await _telegramProxy.ProcessMessageAsync(message);

@@ -28,8 +28,4 @@
 		<ProjectReference Include="..\Genocs.TelegramIntegration\Genocs.TelegramIntegration.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Consumers\" />
-	  <Folder Include="Handlers\" />
-	</ItemGroup>
 </Project>

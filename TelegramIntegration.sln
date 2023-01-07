@@ -1,0 +1,54 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33110.190
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Genocs.TelegramIntegration", "src\Genocs.TelegramIntegration\Genocs.TelegramIntegration.csproj", "{95ADA448-2C2A-4450-82FF-D827546A5E47}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Genocs.TelegramIntegration.xUnitTests", "src\Genocs.TelegramIntegration.xUnitTests\Genocs.TelegramIntegration.xUnitTests.csproj", "{2CFFEC1A-58BD-4AB6-9AA1-DAD70DCBB07A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0702E516-3176-4835-8FBB-307E274BE905}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Genocs.TelegramIntegration.Worker", "src\Genocs.TelegramIntegration.Worker\Genocs.TelegramIntegration.Worker.csproj", "{00B85E0F-04CD-4623-9B08-7089F04241E8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Genocs.TelegramIntegration.Contracts", "src\Genocs.TelegramIntegration.Contracts\Genocs.TelegramIntegration.Contracts.csproj", "{93BA6374-422A-48BC-AA5A-9A428920B68E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Genocs.TelegramIntegration.WebApi", "src\Genocs.TelegramIntegration.WebApi\Genocs.TelegramIntegration.WebApi.csproj", "{7EA8BB16-BBE2-4EFB-8D03-CA436291C2FA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{95ADA448-2C2A-4450-82FF-D827546A5E47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95ADA448-2C2A-4450-82FF-D827546A5E47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95ADA448-2C2A-4450-82FF-D827546A5E47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95ADA448-2C2A-4450-82FF-D827546A5E47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CFFEC1A-58BD-4AB6-9AA1-DAD70DCBB07A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CFFEC1A-58BD-4AB6-9AA1-DAD70DCBB07A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CFFEC1A-58BD-4AB6-9AA1-DAD70DCBB07A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CFFEC1A-58BD-4AB6-9AA1-DAD70DCBB07A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00B85E0F-04CD-4623-9B08-7089F04241E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00B85E0F-04CD-4623-9B08-7089F04241E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00B85E0F-04CD-4623-9B08-7089F04241E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00B85E0F-04CD-4623-9B08-7089F04241E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93BA6374-422A-48BC-AA5A-9A428920B68E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93BA6374-422A-48BC-AA5A-9A428920B68E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93BA6374-422A-48BC-AA5A-9A428920B68E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93BA6374-422A-48BC-AA5A-9A428920B68E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EA8BB16-BBE2-4EFB-8D03-CA436291C2FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EA8BB16-BBE2-4EFB-8D03-CA436291C2FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EA8BB16-BBE2-4EFB-8D03-CA436291C2FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EA8BB16-BBE2-4EFB-8D03-CA436291C2FA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2CFFEC1A-58BD-4AB6-9AA1-DAD70DCBB07A} = {0702E516-3176-4835-8FBB-307E274BE905}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3D97BB6D-57F0-4EE6-A442-13CD1979F539}
+	EndGlobalSection
+EndGlobal

@@ -59,8 +59,6 @@ public class TelegramProxy : ITelegramProxy
 
         var updates = botClient.GetUpdates();
 
-        //_botClient.SendMediaGroup();
-
         if (updates != null && updates.Any())
         {
             // Check Texts
@@ -202,6 +200,33 @@ public class TelegramProxy : ITelegramProxy
         return null;
     }
 
+
+    public async Task<FormRecognizerResponse?> CallCognitiveServices(string resourceUrl)
+    {
+
+        FormRecognizerRequest request = new FormRecognizerRequest { Url = resourceUrl };
+        using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "ScanForm/ClassifyAndEvaluate")
+        {
+            Content = JsonContent.Create(request)
+        };
+
+        using var httpClient = _httpClientFactory.CreateClient();
+        httpClient.BaseAddress = new Uri("https://genocs-form-extractor.azurewebsites.net/");
+        httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+        var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
+
+        if (httpResponseMessage.IsSuccessStatusCode)
+        {
+            string content = await httpResponseMessage.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            return JsonSerializer.Deserialize<FormRecognizerResponse>(content, options);
+        }
+        return null;
+    }
+
     public async Task ProcessMessageAsync(Update message)
     {
         if (message == null)
@@ -252,6 +277,43 @@ public class TelegramProxy : ITelegramProxy
             if (!string.IsNullOrEmpty(message.Message.Caption) && message.Message.Caption.ToLower().Contains("tff"))
             {
                 var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
+
+                var photo = message.Message.Photo.OrderByDescending(o => o.FileSize).FirstOrDefault();
+
+                if (photo != null)
+                {
+                    try
+                    {
+                        // Ask telegram foto url
+                        var telegramFile = botClient.GetFile(photo.FileId);
+
+                        // Build the full url  
+                        string resourceUrl = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{telegramFile.FilePath}";
+
+                        // Call form Recognizer
+                        var cognitiveServicesResponse = await CallCognitiveServices(resourceUrl);
+
+                        if (cognitiveServicesResponse != null)
+                        {
+                            var prediction = cognitiveServicesResponse?.Classification?.Predictions?.FirstOrDefault();
+
+                            if (prediction != null)
+                            {
+                                var res2 = botClient.SendMessage(message.Message.Chat.Id, $"Your TaxFree form issued by {prediction.TagName} has been acquired sucessfully!");
+                                var res3 = botClient.SendMessage(message.Message.Chat.Id, $"Remember to validate the form at the Exit point to get your refund!");
+                            }
+                        }
+                        else
+                        {
+                            var res4 = botClient.SendMessage(message.Message.Chat.Id, $"Hello, sorry I can't figure out what you sent me! Immagine: {resourceUrl}");
+                        }
+
+                    }
+                    catch (System.Exception ex)
+                    {
+                        _logger.LogCritical(ex, ex.Message);
+                    }
+                }
             }
             return;
         }
@@ -262,12 +324,12 @@ public class TelegramProxy : ITelegramProxy
 
             if (string.IsNullOrEmpty(message.Message.Caption))
             {
-                var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
+                var res = botClient.SendMessage(message.Message.Chat.Id, "Hello, sorry I can't figure out what you sent me!");
             }
 
             if (!string.IsNullOrEmpty(message.Message.Caption) && message.Message.Caption.ToLower().Contains("tff"))
             {
-                var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, thanks for send me image. Starst process it and I'll let you know!");
+                var res = botClient.SendMessage(message.Message.Chat.Id, "Hello, thanks for send me your TaxFree Form. I'll process it and I'll let you know!");
             }
             return;
         }

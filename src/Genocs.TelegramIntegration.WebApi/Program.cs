@@ -28,6 +28,8 @@ builder.Host.UseSerilog((ctx, lc) => lc
 // add services to DI container
 var services = builder.Services;
 
+TelemetryAndLogging.Initialize(builder.Configuration.GetConnectionString("ApplicationInsights"));
+
 // Set Custom Open telemetry
 services.AddCustomOpenTelemetry(builder.Configuration);
 
@@ -37,6 +39,9 @@ services.AddControllers().AddJsonOptions(x =>
 {
     // serialize enums as strings in api responses (e.g. Role)
     x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
+    // Fix
+    //x.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
 });
 
 services.AddHealthChecks();
@@ -89,6 +94,8 @@ app.MapControllers();
 app.MapHealthChecks("/healthz");
 
 app.Run();
+
+await TelemetryAndLogging.FlushAndCloseAsync();
 
 Log.CloseAndFlush();
 

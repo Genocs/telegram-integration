@@ -51,12 +51,12 @@ Use this file inside Visual Studio code with [REST Client](https://marketplace.v
 ## Docker image
 
 ``` sh
-docker build -t genocs/telegram_integration-webapi:1.0.0 -t genocs/telegram_integration-webapi:latest -f .\webapi.dockerfile .
+docker build -t genocs/telegram_integration-webapi:1.0.6 -t genocs/telegram_integration-webapi:latest -f .\webapi.dockerfile .
 
-docker tag genocs/telegram_integration-webapi genocs/telegram_integration-webapi:1.0.0
+docker tag genocs/telegram_integration-webapi genocs/telegram_integration-webapi:1.0.4
 docker tag genocs/telegram_integration-webapi genocs/telegram_integration-webapi:latest
 
-docker push genocs/telegram_integration-webapi:1.0.0
+docker push genocs/telegram_integration-webapi:1.0.6
 docker push genocs/telegram_integration-webapi:latest
 ``` 
 

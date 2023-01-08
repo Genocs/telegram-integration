@@ -1,4 +1,3 @@
-using Genocs.TelegramIntegration.Contracts.Models;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;

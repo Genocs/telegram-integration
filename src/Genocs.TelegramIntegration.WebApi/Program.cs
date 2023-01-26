@@ -1,16 +1,13 @@
 using Genocs.Monitoring;
+using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Options;
-using Genocs.TelegramIntegration.Services.Interfaces;
 using Genocs.TelegramIntegration.Services;
+using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using Serilog.Events;
 using System.Text.Json.Serialization;
-using Genocs.Persistence.MongoDb.Options;
-using Genocs.Persistence.MongoDb;
-using Genocs.Persistence.MongoDb.Repositories;
-using Genocs.TelegramIntegration.Domains;
 
 Log.Logger = new LoggerConfiguration()
 .MinimumLevel.Debug()
@@ -28,21 +25,18 @@ builder.Host.UseSerilog((ctx, lc) => lc
 // add services to DI container
 var services = builder.Services;
 
-TelemetryAndLogging.Initialize(builder.Configuration.GetConnectionString("ApplicationInsights"));
-
 // Set Custom Open telemetry
 services.AddCustomOpenTelemetry(builder.Configuration);
 
 
 services.AddCors();
-services.AddControllers().AddJsonOptions(x =>
-{
-    // serialize enums as strings in api responses (e.g. Role)
-    x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 
-    // Fix
-    //x.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-});
+services.AddControllers()
+    .AddJsonOptions(x =>
+    {
+        // serialize enums as strings in api responses (e.g. Role)
+        x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 services.AddHealthChecks();
 
@@ -56,8 +50,8 @@ services.Configure<HealthCheckPublisherOptions>(options =>
 });
 
 ConfigureServices(services, builder.Configuration);
-ConfigureMongoDb(services, builder.Configuration);
 
+services.AddMongoDatabase(builder.Configuration);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
@@ -95,27 +89,13 @@ app.MapHealthChecks("/healthz");
 
 app.Run();
 
-await TelemetryAndLogging.FlushAndCloseAsync();
-
 Log.CloseAndFlush();
 
 static IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration configuration)
 {
     services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.Position));
     services.Configure<OpenAISettings>(configuration.GetSection(OpenAISettings.Position));
-    services.TryAddSingleton<ITelegramProxy, TelegramProxy>();
-
-    return services;
-}
-
-static IServiceCollection ConfigureMongoDb(IServiceCollection services, IConfiguration configuration)
-{
-    services.Configure<MongoDbSettings>(configuration.GetSection(MongoDbSettings.Position));
-
-    services.TryAddSingleton<IMongoDatabaseProvider, MongoDatabaseProvider>();
-    services.TryAddSingleton<IMongoDbRepository<GenocsChat>, MongoDbRepositoryBase<GenocsChat>>();
-
-    // Add Repository here
+    services.TryAddScoped<ITelegramProxy, TelegramProxy>();
 
     return services;
 }

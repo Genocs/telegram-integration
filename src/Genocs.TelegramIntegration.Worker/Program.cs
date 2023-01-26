@@ -1,16 +1,13 @@
-using Genocs.Core.Demo.Worker;
 using Genocs.Monitoring;
-using Genocs.Persistence.MongoDb.Options;
-using Genocs.Persistence.MongoDb;
-using Genocs.Persistence.MongoDb.Repositories;
-using Genocs.TelegramIntegration.Domains;
+using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
+using Genocs.TelegramIntegration.Worker.Consumers;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 using Serilog.Events;
-using MassTransit;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
@@ -31,7 +28,8 @@ IHost host = Host.CreateDefaultBuilder(args)
         //TelemetryAndLogging.Initialize(hostContext.Configuration.GetConnectionString("ApplicationInsights"));
         services.AddCustomOpenTelemetry(hostContext.Configuration);
 
-        ConfigureMongoDb(services, hostContext.Configuration);
+        services.AddMongoDatabase(hostContext.Configuration);
+
         ConfigureMassTransit(services, hostContext.Configuration);
         ConfigureServices(services, hostContext.Configuration);
 
@@ -39,10 +37,7 @@ IHost host = Host.CreateDefaultBuilder(args)
         services.AddHttpClient();
 
         // Start hosted service 
-        services.AddHostedService<MainHostedService>();
-
-
-        services.AddTransient<IMongoDbRepository<GenocsChat>, MongoDbRepository<GenocsChat>>();
+        //services.AddHostedService<MainHostedService>();
     })
     .ConfigureLogging((hostingContext, logging) =>
     {
@@ -58,19 +53,6 @@ await TelemetryAndLogging.FlushAndCloseAsync();
 Log.CloseAndFlush();
 
 
-
-static IServiceCollection ConfigureMongoDb(IServiceCollection services, IConfiguration configuration)
-{
-    services.Configure<MongoDbSettings>(configuration.GetSection(MongoDbSettings.Position));
-
-    services.TryAddSingleton<IMongoDatabaseProvider, MongoDatabaseProvider>();
-    services.TryAddSingleton<IMongoDbRepository<GenocsChat>, MongoDbRepositoryBase<GenocsChat>>();
-
-    // Add Repository here
-
-    return services;
-}
-
 static IServiceCollection ConfigureServices(IServiceCollection services, IConfiguration configuration)
 {
     services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.Position));
@@ -78,7 +60,6 @@ static IServiceCollection ConfigureServices(IServiceCollection services, IConfig
 
     services.TryAddSingleton<ITelegramProxy, TelegramProxy>();
 
-    //services.TryAddSingleton<IRepository<Order, string>, MongoDbRepositoryBase<Order, string>>();
 
     // Add Repository here
 
@@ -91,7 +72,7 @@ static IServiceCollection ConfigureMassTransit(IServiceCollection services, ICon
     services.AddMassTransit(cfg =>
     {
         // Consumer configuration
-        //cfg.AddConsumersFromNamespaceContaining<SubmitOrderConsumer>();
+        cfg.AddConsumersFromNamespaceContaining<RewardProcessedConsumer>();
 
         // Set the transport
         cfg.UsingRabbitMq(ConfigureBus);

@@ -17,12 +17,34 @@
 This repo contains a set of basic libraries designed by Genocs. The libraries are built using .NET standard 2.1. The package version is hosted on [nuget](https://www.nuget.org/packages).
 
 
-``` bash
-# Build
-dotnet build .\src
+``` PS
+# Restore packages
+dotnet restore
 
-# Pack
-dotnet pack .\src
+# Build solution
+dotnet build
+
+# Run tests
+dotnet test
+
+# Run worker
+dotnet run --project .\src\Genocs.TelegramIntegration.WebApi
+dotnet run --project .\src\Genocs.TelegramIntegration.Worker
+
+# ** DOCKER ** #
+# Build docker image
+docker build -f webapi.dockerfile -t genocs/telegram_integration-webapi:1.8.0 -t genocs/telegram_integration-webapi:latest .
+docker build -f worker.dockerfile -t genocs/telegram_integration-worker:1.7.0 -t genocs/telegram_integration-worker:latest .
+
+# Push image on dockerhub
+docker push genocs/telegram_integration-webapi:1.8.0
+docker push genocs/telegram_integration-webapi:latest
+
+docker push genocs/telegram_integration-worker:1.7.0
+docker push genocs/telegram_integration-worker:latest
+
+# Push image on dockerhub
+docker-compose up
 
 ```
 
@@ -48,20 +70,3 @@ api-workbench.rest
 
 Use this file inside Visual Studio code with [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) plugin 
 
-## Docker image
-
-``` sh
-docker build -t genocs/telegram_integration-webapi:1.0.6 -t genocs/telegram_integration-webapi:latest -f .\webapi.dockerfile .
-
-docker tag genocs/telegram_integration-webapi genocs/telegram_integration-webapi:1.0.4
-docker tag genocs/telegram_integration-webapi genocs/telegram_integration-webapi:latest
-
-docker push genocs/telegram_integration-webapi:1.0.6
-docker push genocs/telegram_integration-webapi:latest
-``` 
-
-
-
-``` sh
-docker-compose -f .\docker-compose.yml build
-``` 

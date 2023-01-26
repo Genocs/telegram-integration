@@ -1,5 +1,8 @@
+using Genocs.TelegramIntegration.Contracts.Models;
 using Genocs.TelegramIntegration.Services.Interfaces;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Mime;
 using System.Text.Json;
 using Telegram.BotAPI.GettingUpdates;
 
@@ -18,12 +21,23 @@ public class WebHookController : ControllerBase
         _telegramProxy = telegramProxy ?? throw new ArgumentNullException(nameof(telegramProxy));
     }
 
-    [HttpPost()]
-    public async Task<IActionResult> PostUpdates(Update message)
+    [HttpGet()]
+    public IActionResult Get()
     {
-        _logger.LogCritical(JsonSerializer.Serialize(message));
-        await _telegramProxy.ProcessMessageAsync(message);
-        await _telegramProxy.LogMessageAsync(JsonSerializer.Serialize(message));
-        return Ok(message);
+        return Ok("xx");
+    }
+
+    [HttpPost("test")]
+    [Consumes(MediaTypeNames.Application.Json)]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> PostUpdates(object message)
+    {
+        string ser = JsonSerializer.Serialize(message);
+
+        Update? update = JsonSerializer.Deserialize<Update>(ser);
+        await _telegramProxy.ProcessMessageAsync(update);
+        return Accepted();
     }
 }

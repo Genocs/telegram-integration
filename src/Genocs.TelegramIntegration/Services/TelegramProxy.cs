@@ -23,8 +23,6 @@ public class TelegramProxy : ITelegramProxy
     private readonly TelegramSettings _telegramOptions;
     private readonly OpenAISettings _openAIOptions;
 
-    private readonly List<string> _stopTags = new List<string> { @"/start" };
-
     public TelegramProxy(IOptions<TelegramSettings> telegramOptions,
         ILogger<TelegramProxy> logger,
         IOptions<OpenAISettings> openAIOptions,
@@ -57,7 +55,7 @@ public class TelegramProxy : ITelegramProxy
 
         BotClient botClient = new BotClient(_telegramOptions.Token);
 
-        var updates = botClient.GetUpdates();
+        var updates = botClient.GetUpdates(offset: 28851261);
 
         if (updates != null && updates.Any())
         {
@@ -151,7 +149,6 @@ public class TelegramProxy : ITelegramProxy
             var invoiceToUpdates = updates.Where(c => c.PreCheckoutQuery != null);
             if (invoiceToUpdates != null && invoiceToUpdates.Any())
             {
-
                 foreach (var update in invoiceToUpdates)
                 {
                     var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == update.UpdateId);
@@ -165,15 +162,6 @@ public class TelegramProxy : ITelegramProxy
                 }
             }
         }
-    }
-
-    public bool CanCallGPT3(string textMessage)
-    {
-        if (string.IsNullOrWhiteSpace(textMessage)) return false;
-        if (_stopTags.Contains(textMessage)) return false;
-
-        return true;
-
     }
 
     public async Task<OpenAIResponse?> CallGPT3Async(OpenAIRequest request)
@@ -200,38 +188,19 @@ public class TelegramProxy : ITelegramProxy
         return null;
     }
 
-
-    public async Task<FormRecognizerResponse?> CallCognitiveServices(string resourceUrl)
-    {
-
-        FormRecognizerRequest request = new FormRecognizerRequest { Url = resourceUrl };
-        using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "ScanForm/ClassifyAndEvaluate")
-        {
-            Content = JsonContent.Create(request)
-        };
-
-        using var httpClient = _httpClientFactory.CreateClient();
-        httpClient.BaseAddress = new Uri("https://genocs-form-extractor.azurewebsites.net/");
-        httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-        var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
-
-        if (httpResponseMessage.IsSuccessStatusCode)
-        {
-            string content = await httpResponseMessage.Content.ReadAsStringAsync();
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-            return JsonSerializer.Deserialize<FormRecognizerResponse>(content, options);
-        }
-        return null;
-    }
-
-    public async Task ProcessMessageAsync(Update message)
+    public async Task ProcessMessageAsync(Update? message)
     {
         if (message == null)
         {
             _logger.LogError("ProcessMessageAsync received null message");
+            return;
+        }
+
+        // Payment
+        if (message.PreCheckoutQuery != null)
+        {
+            BotClient botClient = new BotClient(_telegramOptions.Token);
+            botClient.AnswerPreCheckoutQuery(message.PreCheckoutQuery.Id, true);
             return;
         }
 
@@ -240,6 +209,7 @@ public class TelegramProxy : ITelegramProxy
             _logger.LogError("ProcessMessageAsync received null message.Message");
             return;
         }
+
 
         var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == message.UpdateId);
 
@@ -252,104 +222,60 @@ public class TelegramProxy : ITelegramProxy
         GenocsChat chatMessage = new GenocsChat { UpdateId = message.UpdateId };
         await _mongoDbRepository.InsertAsync(chatMessage);
 
-        // Payment
-        if (message.PreCheckoutQuery != null)
-        {
-            BotClient botClient = new BotClient(_telegramOptions.Token);
-            botClient.AnswerPreCheckoutQuery(message.PreCheckoutQuery.Id, true);
-        }
 
-        // Message
-        if (message.Message == null)
-        {
-            return;
-        }
-
+        // Image
         if (message.Message.Photo != null)
         {
             BotClient botClient = new BotClient(_telegramOptions.Token);
-
-            if (string.IsNullOrEmpty(message.Message.Caption))
+            if (string.IsNullOrWhiteSpace(message.Message.Caption))
             {
                 var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
+                return;
             }
 
             if (!string.IsNullOrEmpty(message.Message.Caption) && message.Message.Caption.ToLower().Contains("tff"))
             {
                 var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
-
-                var photo = message.Message.Photo.OrderByDescending(o => o.FileSize).FirstOrDefault();
-
-                if (photo != null)
-                {
-                    try
-                    {
-                        // Ask telegram foto url
-                        var telegramFile = botClient.GetFile(photo.FileId);
-
-                        // Build the full url  
-                        string resourceUrl = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{telegramFile.FilePath}";
-
-                        // Call form Recognizer
-                        var cognitiveServicesResponse = await CallCognitiveServices(resourceUrl);
-
-                        if (cognitiveServicesResponse != null)
-                        {
-                            var prediction = cognitiveServicesResponse?.Classification?.Predictions?.FirstOrDefault();
-
-                            if (prediction != null)
-                            {
-                                var res2 = botClient.SendMessage(message.Message.Chat.Id, $"Your TaxFree form issued by {prediction.TagName} has been acquired sucessfully!");
-                                var res3 = botClient.SendMessage(message.Message.Chat.Id, $"Remember to validate the form at the Exit point to get your refund!");
-                            }
-                        }
-                        else
-                        {
-                            var res4 = botClient.SendMessage(message.Message.Chat.Id, $"Hello, sorry I can't figure out what you sent me! Immagine: {resourceUrl}");
-                        }
-
-                    }
-                    catch (System.Exception ex)
-                    {
-                        _logger.LogCritical(ex, ex.Message);
-                    }
-                }
+                // Cognitive services integration here
+                return;
             }
-            return;
         }
 
-        if (message.Message.Document != null)
+
+        // Check empty message text
+        if (string.IsNullOrWhiteSpace(message.Message.Text))
         {
-            BotClient botClient = new BotClient(_telegramOptions.Token);
-
-            if (string.IsNullOrEmpty(message.Message.Caption))
-            {
-                var res = botClient.SendMessage(message.Message.Chat.Id, "Hello, sorry I can't figure out what you sent me!");
-            }
-
-            if (!string.IsNullOrEmpty(message.Message.Caption) && message.Message.Caption.ToLower().Contains("tff"))
-            {
-                var res = botClient.SendMessage(message.Message.Chat.Id, "Hello, thanks for send me your TaxFree Form. I'll process it and I'll let you know!");
-            }
+            _logger.LogInformation($"ProcessMessageAsync received Message without text: {message.UpdateId}");
             return;
         }
 
-        if (!CanCallGPT3(message.Message.Text))
+        // Check message text commands
+        if (message.Message.Text.Trim().StartsWith("/") || message.Message.Text.Trim().StartsWith("@"))
         {
+            _logger.LogInformation($"ProcessMessageAsync received Message with command text: {message.UpdateId}");
             return;
         }
 
+        // Generic test call GPT3
         var response = await CallGPT3Async(new OpenAIRequest { prompt = message.Message.Text });
 
         if (response != null && response.Choices != null && response.Choices.Any())
         {
+            BotClient botClient = new BotClient(_telegramOptions.Token);
             var choice = response.Choices.FirstOrDefault();
             if (choice != null)
             {
-                BotClient botClient = new BotClient(_telegramOptions.Token);
-
                 var res = botClient.SendMessage(message.Message.From.Id, choice.text);
             }
+        }
+    }
+
+    public async Task SendMessageAsync(int recipient, string message)
+    {
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            BotClient botClient = new BotClient(_telegramOptions.Token);
+            var res = await botClient.SendMessageAsync(recipient, message);
         }
     }
 

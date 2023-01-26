@@ -55,7 +55,7 @@ public class TelegramProxy : ITelegramProxy
 
         BotClient botClient = new BotClient(_telegramOptions.Token);
 
-        var updates = botClient.GetUpdates(offset: 28851261);
+        var updates = botClient.GetUpdates();
 
         if (updates != null && updates.Any())
         {
@@ -210,7 +210,6 @@ public class TelegramProxy : ITelegramProxy
             return;
         }
 
-
         var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == message.UpdateId);
 
         if (exist != null)
@@ -221,7 +220,6 @@ public class TelegramProxy : ITelegramProxy
 
         GenocsChat chatMessage = new GenocsChat { UpdateId = message.UpdateId };
         await _mongoDbRepository.InsertAsync(chatMessage);
-
 
         // Image
         if (message.Message.Photo != null)

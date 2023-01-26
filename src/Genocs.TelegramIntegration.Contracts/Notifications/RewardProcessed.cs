@@ -6,6 +6,7 @@ namespace Genocs.Fiscanner.Contracts.Notifications
     {
         string MemberId { get; }
         string NotificationTag { get; }
+        string Language { get; }
         Dictionary<string, string> Metadata { get; }
     }
 }

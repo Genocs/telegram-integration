@@ -3,6 +3,7 @@ using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
@@ -10,17 +11,27 @@ using Serilog.Events;
 using System.Text.Json.Serialization;
 
 Log.Logger = new LoggerConfiguration()
-.MinimumLevel.Debug()
-.MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-.Enrich.FromLogContext()
+    .MinimumLevel.Debug()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    .MinimumLevel.Override("MassTransit", LogEventLevel.Information)
+    .Enrich.FromLogContext()
     .WriteTo.Console()
     .CreateLogger();
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog((ctx, lc) => lc
-    .WriteTo.Console());
+
+builder.Host.UseSerilog((ctx, lc) =>
+{
+    lc.WriteTo.Console();
+    lc.WriteTo.ApplicationInsights(new TelemetryConfiguration
+    {
+        ConnectionString = builder.Configuration.GetConnectionString("ApplicationInsights")
+    }, TelemetryConverter.Traces);
+
+});
+
 
 // add services to DI container
 var services = builder.Services;
@@ -29,14 +40,14 @@ var services = builder.Services;
 services.AddCustomOpenTelemetry(builder.Configuration);
 
 
-services.AddCors();
+services.AddMongoDatabase(builder.Configuration);
 
-services.AddControllers()
-    .AddJsonOptions(x =>
-    {
-        // serialize enums as strings in api responses (e.g. Role)
-        x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
+services.AddCors();
+services.AddControllers().AddJsonOptions(x =>
+{
+    // serialize enums as strings in api responses (e.g. Role)
+    x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 services.AddHealthChecks();
 
@@ -51,7 +62,7 @@ services.Configure<HealthCheckPublisherOptions>(options =>
 
 ConfigureServices(services, builder.Configuration);
 
-services.AddMongoDatabase(builder.Configuration);
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();

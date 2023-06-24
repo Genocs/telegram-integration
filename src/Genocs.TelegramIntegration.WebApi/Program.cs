@@ -1,11 +1,16 @@
+using Azure.Monitor.OpenTelemetry.Exporter;
 using Genocs.Monitoring;
 using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
+using Genocs.TelegramIntegration.WebApi;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using OpenTelemetry;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Events;
 using System.Text.Json.Serialization;
@@ -21,24 +26,30 @@ Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 
+string? applicationInsightsConnectionString = builder.Configuration.GetConnectionString(Constants.ApplicationInsightsConnectionString);
+
+string serviceName = builder.Configuration.GetValue(typeof(string), Constants.ServiceName) as string ?? "Telegram-Integration WebApi";
+
+OpenTelemetrySettings openTelemetrySettings = new OpenTelemetrySettings();
+builder.Configuration.GetSection(OpenTelemetrySettings.Position).Bind(openTelemetrySettings);
 
 builder.Host.UseSerilog((ctx, lc) =>
 {
     lc.WriteTo.Console();
-    lc.WriteTo.ApplicationInsights(new TelemetryConfiguration
-    {
-        ConnectionString = builder.Configuration.GetConnectionString("ApplicationInsights")
-    }, TelemetryConverter.Traces);
 
+    // Check for Azure ApplicationInsights
+    if (!string.IsNullOrWhiteSpace(applicationInsightsConnectionString))
+    {
+        lc.WriteTo.ApplicationInsights(new TelemetryConfiguration
+        {
+            ConnectionString = applicationInsightsConnectionString
+        }, TelemetryConverter.Traces);
+    }
 });
 
 
 // add services to DI container
 var services = builder.Services;
-
-// Set Custom Open telemetry
-services.AddCustomOpenTelemetry(builder.Configuration);
-
 
 services.AddMongoDatabase(builder.Configuration);
 
@@ -68,6 +79,37 @@ services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
 
 services.AddOptions();
+
+
+// Set Custom Open telemetry
+services.AddOpenTelemetryTracing(builder =>
+{
+    TracerProviderBuilder provider = builder.SetResourceBuilder(ResourceBuilder.CreateDefault()
+            .AddService(serviceName)
+            .AddTelemetrySdk()
+            .AddEnvironmentVariableDetector())
+        .AddSource("*");
+    //.AddMongoDBInstrumentation()
+    provider.AddAzureMonitorTraceExporter(o =>
+    {
+        o.ConnectionString = applicationInsightsConnectionString;
+    });
+
+    provider.AddJaegerExporter(o =>
+    {
+        o.AgentHost = openTelemetrySettings.AgentHost;
+        o.AgentPort = 6831;
+        o.MaxPayloadSizeInBytes = 4096;
+        o.ExportProcessorType = ExportProcessorType.Batch;
+        o.BatchExportProcessorOptions = new BatchExportProcessorOptions<System.Diagnostics.Activity>
+        {
+            MaxQueueSize = 2048,
+            ScheduledDelayMilliseconds = 5000,
+            ExporterTimeoutMilliseconds = 30000,
+            MaxExportBatchSize = 512,
+        };
+    });
+});
 
 var app = builder.Build();
 

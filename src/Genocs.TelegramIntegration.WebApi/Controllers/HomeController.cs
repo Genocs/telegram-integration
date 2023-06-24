@@ -6,10 +6,11 @@ namespace Genocs.TelegramIntegration.WebApi.Controllers;
 [Route("")]
 public class HomeController : ControllerBase
 {
-
-    [HttpGet()]
+    [HttpGet]
     public IActionResult Get()
-    {
-        return Ok("Genocs Telegram Integration Service");
-    }
+    => Ok("Genocs Telegram Integration Services");
+
+    [HttpGet("ping")]
+    public IActionResult GetPing()
+        => Ok("pong");
 }

@@ -4,10 +4,14 @@ using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using Genocs.TelegramIntegration.Worker.Consumers;
+using Genocs.TelegramIntegration.Worker.Options;
 using MassTransit;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using MongoDB.Bson.Serialization.Conventions;
 using Serilog;
 using Serilog.Events;
+using System.Reflection;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
@@ -27,6 +31,8 @@ IHost host = Host.CreateDefaultBuilder(args)
     {
         //TelemetryAndLogging.Initialize(hostContext.Configuration.GetConnectionString("ApplicationInsights"));
         services.AddCustomOpenTelemetry(hostContext.Configuration);
+
+        ConfigureCustomSettings(services);
 
         services.AddMongoDatabase(hostContext.Configuration);
 
@@ -66,20 +72,53 @@ static IServiceCollection ConfigureServices(IServiceCollection services, IConfig
     return services;
 }
 
+/// <summary>
+/// Setup Masstransit with RabbitMQ transport and MongoDB persistence layer
+/// </summary>
+/// <param name="services">The service collection</param>
 static IServiceCollection ConfigureMassTransit(IServiceCollection services, IConfiguration configuration)
 {
+    //services.AddMediator();
     services.TryAddSingleton(KebabCaseEndpointNameFormatter.Instance);
-    services.AddMassTransit(cfg =>
-    {
-        // Consumer configuration
-        cfg.AddConsumersFromNamespaceContaining<RewardProcessedConsumer>();
 
-        // Set the transport
-        cfg.UsingRabbitMq(ConfigureBus);
+    var rabbitMQSettings = new RabbitMQSettings();
+    configuration.GetSection(RabbitMQSettings.Position).Bind(rabbitMQSettings);
+
+    services.AddSingleton(rabbitMQSettings);
+
+    services.AddMassTransit(x =>
+    {
+        // Consumer
+        //x.AddConsumersFromNamespaceContaining<RewardProcessedConsumer>();
+        x.AddConsumers(Assembly.GetExecutingAssembly());
+        x.AddActivities(Assembly.GetExecutingAssembly());
+        x.SetKebabCaseEndpointNameFormatter();
+
+        // Transport RabbitMQ
+        x.UsingRabbitMq((context, cfg) =>
+        {
+            cfg.ConfigureEndpoints(context);
+            //cfg.UseHealthCheck(context);
+            cfg.Host(rabbitMQSettings.HostName, rabbitMQSettings.VirtualHost,
+                h =>
+                {
+                    h.Username(rabbitMQSettings.UserName);
+                    h.Password(rabbitMQSettings.Password);
+
+                    //h.UseSsl(s =>
+                    //{
+                    //    s.Protocol = SslProtocols.Tls12;
+                    //});
+                }
+            );
+        });
+
+        // Persistence MongoDB
     });
 
     return services;
 }
+
 
 static void ConfigureBus(IBusRegistrationContext context, IRabbitMqBusFactoryConfigurator configurator)
 {
@@ -103,6 +142,19 @@ static void ConfigureBus(IBusRegistrationContext context, IRabbitMqBusFactoryCon
 
     // This configuration will configure the Activity Definition
     configurator.ConfigureEndpoints(context);
+}
+
+static IServiceCollection ConfigureCustomSettings(IServiceCollection services)
+{
+    // MongoDb global Settings 
+    var pack = new ConventionPack
+        {
+            new IgnoreExtraElementsConvention(true),
+            new CamelCaseElementNameConvention()
+    };
+    ConventionRegistry.Register("Solution Conventions", pack, t => true);
+
+    return services;
 }
 
 

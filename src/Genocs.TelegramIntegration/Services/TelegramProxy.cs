@@ -99,7 +99,7 @@ public class TelegramProxy : ITelegramProxy
                         GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
                         await _mongoDbRepository.InsertAsync(genocsChat);
 
-                        if (string.IsNullOrEmpty(update.Message.Caption))
+                        if (string.IsNullOrEmpty(update.Message?.Caption))
                         {
                             var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
                             continue;
@@ -128,7 +128,7 @@ public class TelegramProxy : ITelegramProxy
                         GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
                         await _mongoDbRepository.InsertAsync(genocsChat);
 
-                        if (string.IsNullOrEmpty(update.Message.Caption))
+                        if (string.IsNullOrEmpty(update.Message?.Caption))
                         {
                             var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
                             continue;
@@ -164,7 +164,7 @@ public class TelegramProxy : ITelegramProxy
         }
     }
 
-    public async Task<OpenAIResponse?> CallGPT3Async(OpenAIRequest request)
+    private async Task<OpenAIResponse?> CallGPT3Async(OpenAIRequest request)
     {
         using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _openAIOptions.Url)
         {
@@ -172,6 +172,30 @@ public class TelegramProxy : ITelegramProxy
             {
                 { HeaderNames.Accept, "application/json" },
                 { HeaderNames.Authorization, $"Bearer {_openAIOptions.APIKey}"}
+            },
+            Content = JsonContent.Create(request)
+        };
+
+        using var httpClient = _httpClientFactory.CreateClient();
+        var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
+
+        if (httpResponseMessage.IsSuccessStatusCode)
+        {
+            using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
+            return await JsonSerializer.DeserializeAsync<OpenAIResponse>(contentStream);
+        }
+
+        return null;
+    }
+
+
+    private async Task<OpenAIResponse?> CallFormRecognizer(OpenAIRequest request)
+    {
+        using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _openAIOptions.Url)
+        {
+            Headers =
+            {
+                { HeaderNames.Accept, "application/json" }
             },
             Content = JsonContent.Create(request)
         };

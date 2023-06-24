@@ -3,18 +3,19 @@ using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
-using Genocs.TelegramIntegration.Worker.Consumers;
+using Genocs.TelegramIntegration.Worker;
 using Genocs.TelegramIntegration.Worker.Options;
 using MassTransit;
-using Microsoft.Extensions.Configuration;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MongoDB.Bson.Serialization.Conventions;
 using Serilog;
 using Serilog.Events;
 using System.Reflection;
 
+
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
+    .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .MinimumLevel.Override("MassTransit", LogEventLevel.Information)
     .Enrich.FromLogContext()
@@ -22,14 +23,28 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 
+
 IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((hostContext, builder) =>
     {
         builder.AddUserSecrets<Program>();
     })
+    .UseSerilog((ctx, lc) =>
+    {
+        lc.WriteTo.Console();
+
+        // Check for Azure ApplicationInsights 
+        string? applicationInsightsConnectionString = ctx.Configuration.GetConnectionString(Constants.ApplicationInsightsConnectionString);
+        if (!string.IsNullOrWhiteSpace(applicationInsightsConnectionString))
+        {
+            lc.WriteTo.ApplicationInsights(new TelemetryConfiguration
+            {
+                ConnectionString = applicationInsightsConnectionString
+            }, TelemetryConverter.Traces);
+        }
+    })
     .ConfigureServices((hostContext, services) =>
     {
-        //TelemetryAndLogging.Initialize(hostContext.Configuration.GetConnectionString("ApplicationInsights"));
         services.AddCustomOpenTelemetry(hostContext.Configuration);
 
         ConfigureCustomSettings(services);
@@ -45,16 +60,16 @@ IHost host = Host.CreateDefaultBuilder(args)
         // Start hosted service 
         //services.AddHostedService<MainHostedService>();
     })
-    .ConfigureLogging((hostingContext, logging) =>
-    {
-        logging.AddSerilog(dispose: true);
-        logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-    })
+    //.ConfigureLogging((hostingContext, logging) =>
+    //{
+    //    logging.AddSerilog(dispose: true);
+    //    logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
+    //})
     .Build();
 
 await host.RunAsync();
 
-await TelemetryAndLogging.FlushAndCloseAsync();
+
 
 Log.CloseAndFlush();
 

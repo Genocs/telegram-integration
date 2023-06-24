@@ -11,15 +11,22 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Genocs.Monitoring" Version="1.0.0-rc3.1" />
+		<PackageReference Include="Genocs.Monitoring" Version="5.0.0-preview.3.*" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
+		<PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="4.0.0" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="MassTransit.Extensions.DependencyInjection" Version="7.3.1" />
+		<PackageReference Include="MassTransit.RabbitMQ" Version="8.0.16" />
 		<PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0" />
-		<PackageReference Include="Serilog.Extensions.Logging" Version="3.1.0" />
-		<PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Genocs.TelegramIntegration\Genocs.TelegramIntegration.csproj" />
 	</ItemGroup>
-
 
 </Project>

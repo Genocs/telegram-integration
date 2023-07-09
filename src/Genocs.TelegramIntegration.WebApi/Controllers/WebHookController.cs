@@ -23,7 +23,7 @@ public class WebHookController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PostUpdates(object message)
     {
-        // This is the only way I fund to overcome the issue on deserialize
+        // This is the only way I found to overcome the issue on deserialize
         // PaymentCheckout payload
         string ser = JsonSerializer.Serialize(message);
         Update? update = JsonSerializer.Deserialize<Update>(ser);

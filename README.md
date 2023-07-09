@@ -5,7 +5,7 @@
 | Badge                    | Description                    |
 | ------------------------ | ------------------------------ |
 | Travis CI/CD             | N/A                            |
-| Github Actions           | N/A                            |
+| GitHub Actions           | N/A                            |
 | Azure CI/CD              | N/A                            |
 | NuGet package version    | N/A                            |
 | NuGet package download   | N/A                            |
@@ -15,7 +15,7 @@
 ----
 
 This repo contains a library to integrate Telegram. The library is designed by Genocs.
-The libraries are built using .NET standard 2.1. The package version is hosted on [nuget](https://www.nuget.org/packages).
+The libraries are built using .NET standard 2.1. The package version is hosted on [NuGet](https://www.nuget.org/packages).
 
 
 ``` PS
@@ -34,14 +34,14 @@ dotnet run --project .\src\Genocs.TelegramIntegration.Worker
 
 # ** DOCKER ** #
 # Build docker image
-docker build -f webapi.dockerfile -t genocs/telegram_integration-webapi:2.0.1 -t genocs/telegram_integration-webapi:latest .
-docker build -f worker.dockerfile -t genocs/telegram_integration-worker:2.0.1 -t genocs/telegram_integration-worker:latest .
+docker build -f webapi.dockerfile -t genocs/telegram_integration-webapi:2.1.0 -t genocs/telegram_integration-webapi:latest .
+docker build -f worker.dockerfile -t genocs/telegram_integration-worker:2.1.0 -t genocs/telegram_integration-worker:latest .
 
 # Push image on dockerhub
-docker push genocs/telegram_integration-webapi:2.0.1
+docker push genocs/telegram_integration-webapi:2.1.0
 docker push genocs/telegram_integration-webapi:latest
 
-docker push genocs/telegram_integration-worker:2.0.1
+docker push genocs/telegram_integration-worker:2.1.0
 docker push genocs/telegram_integration-worker:latest
 
 # Push image on dockerhub

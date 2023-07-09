@@ -10,6 +10,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
+using Telegram.BotAPI.AvailableTypes;
 using Telegram.BotAPI.GettingUpdates;
 using Telegram.BotAPI.Payments;
 
@@ -68,7 +69,7 @@ public class TelegramProxy : ITelegramProxy
                 {
                     var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == update.UpdateId);
 
-                    if (exist == null)
+                    if (exist is null)
                     {
                         GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
                         await _mongoDbRepository.InsertAsync(genocsChat);
@@ -123,7 +124,7 @@ public class TelegramProxy : ITelegramProxy
                 foreach (var update in photoToUpdates)
                 {
                     var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == update.UpdateId);
-                    if (exist == null)
+                    if (exist is null)
                     {
                         GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
                         await _mongoDbRepository.InsertAsync(genocsChat);
@@ -236,9 +237,9 @@ public class TelegramProxy : ITelegramProxy
 
         var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == message.UpdateId);
 
-        if (exist != null)
+        if (exist is not null)
         {
-            _logger.LogError($"ProcessMessageAsync received UpdateId that is still there: {message.UpdateId}");
+            _logger.LogError($"ProcessMessageAsync received duplicated UpdateId: {message.UpdateId}");
             return;
         }
 
@@ -251,13 +252,13 @@ public class TelegramProxy : ITelegramProxy
             BotClient botClient = new BotClient(_telegramOptions.Token);
             if (string.IsNullOrWhiteSpace(message.Message.Caption))
             {
-                var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
+                var res = botClient.SendMessage(message.Message.Chat.Id, "I don't understand what you sent me. Sorry, image to tagging is not in place!\nIf the image is a Taxfree form please add the caption 'ttf'!");
                 return;
             }
 
             if (!string.IsNullOrEmpty(message.Message.Caption) && message.Message.Caption.ToLower().Contains("tff"))
             {
-                var res = botClient.SendMessage(message.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
+                var res = botClient.SendMessage(message.Message.Chat.Id, "Hello, I got your TFF and I'm going to process it!");
                 // Cognitive services integration here
                 return;
             }
@@ -275,6 +276,15 @@ public class TelegramProxy : ITelegramProxy
         if (message.Message.Text.Trim().StartsWith("/") || message.Message.Text.Trim().StartsWith("@"))
         {
             _logger.LogInformation($"ProcessMessageAsync received Message with command text: {message.UpdateId}");
+            return;
+        }
+
+        // Check message text commands
+        if (message.Message.Text.Trim().StartsWith("#"))
+        {
+            BotClient botClient = new BotClient(_telegramOptions.Token);
+            var res = botClient.SendMessage(message.Message.From.Id, "Thanks for request a suggestion. Unfortunately Fiscanner integration is a work in progress!");
+            _logger.LogInformation($"ProcessMessageAsync received Message with suggestion: {message.UpdateId}");
             return;
         }
 

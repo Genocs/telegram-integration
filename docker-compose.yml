@@ -2,13 +2,13 @@ version: '3.9'
 
 services:
   application.webapi:
-    image: genocs/telegram_integration-webapi:2.0.1
+    image: genocs/telegram_integration-webapi:2.1.0
     build:
       context: .
       dockerfile: webapi.dockerfile
 
   application.worker:
-    image: genocs/telegram_integration-worker:2.0.1
+    image: genocs/telegram_integration-worker:2.1.0
     build:
       context: .
       dockerfile: worker.dockerfile

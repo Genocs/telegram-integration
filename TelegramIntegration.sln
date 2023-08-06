@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Solution Items", "_Solutio
 		worker.dockerfile = worker.dockerfile
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Genocs.TelegramIntegration.Infrastructure", "src\Genocs.TelegramIntegration.Infrastructure\Genocs.TelegramIntegration.Infrastructure.csproj", "{A990579B-DE01-4946-991E-5B53B7351CD3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,6 +51,10 @@ Global
 		{7EA8BB16-BBE2-4EFB-8D03-CA436291C2FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7EA8BB16-BBE2-4EFB-8D03-CA436291C2FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7EA8BB16-BBE2-4EFB-8D03-CA436291C2FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A990579B-DE01-4946-991E-5B53B7351CD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A990579B-DE01-4946-991E-5B53B7351CD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A990579B-DE01-4946-991E-5B53B7351CD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A990579B-DE01-4946-991E-5B53B7351CD3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

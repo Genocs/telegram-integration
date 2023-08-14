@@ -71,7 +71,7 @@ public static class ServiceCollectionExtensions
         services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.Position));
         services.Configure<OpenAISettings>(configuration.GetSection(OpenAISettings.Position));
         services.Configure<ApiClientSettings>(configuration.GetSection(ApiClientSettings.Position));
-        services.TryAddScoped<ITelegramProxy, TelegramProxy>();
+        services.TryAddSingleton<ITelegramProxy, TelegramProxy>();
 
         return services;
     }

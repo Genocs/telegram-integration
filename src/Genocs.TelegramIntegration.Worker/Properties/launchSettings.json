@@ -8,14 +8,6 @@
       "dotnetRunMessages": true,
       "hotReloadEnabled": false
     }
-  },
-  "$schema": "https://json.schemastore.org/launchsettings.json",
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-      "applicationUrl": "http://localhost:45980",
-      "sslPort": 44333
-    }
   }
 }
+

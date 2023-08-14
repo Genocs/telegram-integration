@@ -4,10 +4,10 @@ using Genocs.Logging;
 using Genocs.Monitoring;
 using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Infrastructure.Extensions;
+using Microsoft.Extensions.Configuration.UserSecrets;
 using Serilog;
 using Serilog.Events;
 using System.Reflection;
-
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()

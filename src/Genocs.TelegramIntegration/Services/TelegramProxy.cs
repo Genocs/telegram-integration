@@ -10,7 +10,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
-using Telegram.BotAPI.AvailableTypes;
 using Telegram.BotAPI.GettingUpdates;
 using Telegram.BotAPI.Payments;
 
@@ -23,10 +22,12 @@ public class TelegramProxy : ITelegramProxy
     private readonly IMongoDbRepository<GenocsChat> _mongoDbRepository;
     private readonly TelegramSettings _telegramOptions;
     private readonly OpenAISettings _openAIOptions;
+    private readonly ApiClientSettings _apiClientOptions;
 
     public TelegramProxy(IOptions<TelegramSettings> telegramOptions,
         ILogger<TelegramProxy> logger,
         IOptions<OpenAISettings> openAIOptions,
+        IOptions<ApiClientSettings> apiClientOptions,
         IHttpClientFactory httpClientFactory,
         IMongoDbRepository<GenocsChat> mongoDbRepository)
     {
@@ -41,6 +42,12 @@ public class TelegramProxy : ITelegramProxy
         if (string.IsNullOrWhiteSpace(openAIOptions.Value.Url)) throw new ArgumentNullException("Url cannot be null");
 
         _openAIOptions = openAIOptions.Value;
+
+        if (apiClientOptions == null) throw new ArgumentNullException(nameof(apiClientOptions));
+        if (apiClientOptions.Value == null) throw new ArgumentNullException(nameof(apiClientOptions.Value));
+        if (string.IsNullOrWhiteSpace(apiClientOptions.Value.FormRecognizerUrl)) throw new ArgumentNullException("FormRecognizerUrl cannot be null");
+
+        _apiClientOptions = apiClientOptions.Value;
 
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
@@ -95,7 +102,7 @@ public class TelegramProxy : ITelegramProxy
                 foreach (var update in documentToUpdates)
                 {
                     var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == update.UpdateId);
-                    if (exist == null)
+                    if (exist is null)
                     {
                         GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
                         await _mongoDbRepository.InsertAsync(genocsChat);
@@ -153,7 +160,7 @@ public class TelegramProxy : ITelegramProxy
                 foreach (var update in invoiceToUpdates)
                 {
                     var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == update.UpdateId);
-                    if (exist == null)
+                    if (exist is null)
                     {
                         GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
                         await _mongoDbRepository.InsertAsync(genocsChat);
@@ -190,24 +197,46 @@ public class TelegramProxy : ITelegramProxy
     }
 
 
-    private async Task<OpenAIResponse?> CallFormRecognizer(OpenAIRequest request)
+    private async Task<OpenAIResponse?> CallFormRecognizerAsync(string fileId)
     {
-        using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _openAIOptions.Url)
+        try
         {
-            Headers =
+            BotClient botClient = new BotClient(_telegramOptions.Token);
+
+            var botFile = await botClient.GetFileAsync(fileId);
+            if (botFile is null)
             {
-                { HeaderNames.Accept, "application/json" }
-            },
-            Content = JsonContent.Create(request)
-        };
+                return null;
+            }
 
-        using var httpClient = _httpClientFactory.CreateClient();
-        var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
+            string urlResource = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{botFile.FilePath}";
 
-        if (httpResponseMessage.IsSuccessStatusCode)
+            if (string.IsNullOrEmpty(urlResource))
+            {
+                return null;
+            }
+
+            using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _apiClientOptions.FormRecognizerUrl)
+            {
+                Headers =
+                {
+                    { HeaderNames.Accept, "application/json" }
+                },
+                Content = JsonContent.Create(new { Url = urlResource })
+            };
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                return await JsonSerializer.DeserializeAsync<OpenAIResponse>(contentStream);
+            }
+        }
+        catch (Exception ex)
         {
-            using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
-            return await JsonSerializer.DeserializeAsync<OpenAIResponse>(contentStream);
+            _logger.LogError(500, ex, "ProcessMessageAsync exception while processing CallFormRecognizerAsync");
         }
 
         return null;
@@ -217,7 +246,7 @@ public class TelegramProxy : ITelegramProxy
     {
         if (message == null)
         {
-            _logger.LogError("ProcessMessageAsync received null message");
+            _logger.LogError("ProcessMessageAsync: Update message is null");
             return;
         }
 
@@ -231,7 +260,7 @@ public class TelegramProxy : ITelegramProxy
 
         if (message.Message == null)
         {
-            _logger.LogError("ProcessMessageAsync received null message.Message");
+            _logger.LogError("ProcessMessageAsync: Update message.Message is null");
             return;
         }
 
@@ -239,7 +268,7 @@ public class TelegramProxy : ITelegramProxy
 
         if (exist is not null)
         {
-            _logger.LogError($"ProcessMessageAsync received duplicated UpdateId: {message.UpdateId}");
+            _logger.LogError($"ProcessMessageAsync: received duplicated UpdateId: {message.UpdateId}");
             return;
         }
 
@@ -249,21 +278,12 @@ public class TelegramProxy : ITelegramProxy
         // Image
         if (message.Message.Photo != null)
         {
-            BotClient botClient = new BotClient(_telegramOptions.Token);
-            if (string.IsNullOrWhiteSpace(message.Message.Caption))
-            {
-                var res = botClient.SendMessage(message.Message.Chat.Id, "I don't understand what you sent me. Sorry, image to tagging is not in place!\nIf the image is a Taxfree form please add the caption 'ttf'!");
-                return;
-            }
+            await SendMessageAsync(message.Message.Chat.Id, $"Hello {message.Message.Chat.FirstName}, I got your image and I'm going to process it!");
 
-            if (!string.IsNullOrEmpty(message.Message.Caption) && message.Message.Caption.ToLower().Contains("tff"))
-            {
-                var res = botClient.SendMessage(message.Message.Chat.Id, "Hello, I got your TFF and I'm going to process it!");
-                // Cognitive services integration here
-                return;
-            }
+            // Cognitive services integration here
+            await CallFormRecognizerAsync(message.Message.Photo.First().FileId);
+            return;
         }
-
 
         // Check empty message text
         if (string.IsNullOrWhiteSpace(message.Message.Text))
@@ -282,8 +302,7 @@ public class TelegramProxy : ITelegramProxy
         // Check message text commands
         if (message.Message.Text.Trim().StartsWith("#"))
         {
-            BotClient botClient = new BotClient(_telegramOptions.Token);
-            var res = botClient.SendMessage(message.Message.From.Id, "Thanks for request a suggestion. Unfortunately Fiscanner integration is a work in progress!");
+            await SendMessageAsync(message.Message.From.Id, "Thanks for request a suggestion. Unfortunately Fiscanner integration is a work in progress!");
             _logger.LogInformation($"ProcessMessageAsync received Message with suggestion: {message.UpdateId}");
             return;
         }
@@ -293,16 +312,15 @@ public class TelegramProxy : ITelegramProxy
 
         if (response != null && response.Choices != null && response.Choices.Any())
         {
-            BotClient botClient = new BotClient(_telegramOptions.Token);
             var choice = response.Choices.FirstOrDefault();
             if (choice != null)
             {
-                var res = botClient.SendMessage(message.Message.From.Id, choice.text);
+                await SendMessageAsync(message.Message.From.Id, choice.text);
             }
         }
     }
 
-    public async Task SendMessageAsync(int recipient, string message)
+    public async Task SendMessageAsync(long recipient, string? message)
     {
         if (!string.IsNullOrWhiteSpace(message))
         {
@@ -311,7 +329,7 @@ public class TelegramProxy : ITelegramProxy
         }
     }
 
-    public async Task LogMessageAsync(string message)
+    public async Task LogMessageAsync(string? message)
     {
         GenocsChat chatMessage = new GenocsChat { Message = message };
         await _mongoDbRepository.InsertAsync(chatMessage);

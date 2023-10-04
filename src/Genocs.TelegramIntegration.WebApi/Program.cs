@@ -1,7 +1,4 @@
 using Genocs.Core.Builders;
-using Genocs.Integration.CognitiveServices.Interfaces;
-using Genocs.Integration.CognitiveServices.Options;
-using Genocs.Integration.CognitiveServices.Services;
 using Genocs.Logging;
 using Genocs.Monitoring;
 using Genocs.Persistence.MongoDb.Extensions;
@@ -59,6 +56,7 @@ services.AddSwaggerGen();
 services.AddCustomMassTransit(builder.Configuration);
 
 services.ConfigureServices(builder.Configuration);
+services.ConfigureCache(builder.Configuration);
 
 services.AddOptions();
 

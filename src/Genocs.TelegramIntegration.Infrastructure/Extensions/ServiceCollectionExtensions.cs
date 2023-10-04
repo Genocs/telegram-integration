@@ -1,6 +1,7 @@
 ﻿using Genocs.Integration.CognitiveServices.Interfaces;
 using Genocs.Integration.CognitiveServices.Options;
 using Genocs.Integration.CognitiveServices.Services;
+using Genocs.TelegramIntegration.Contracts.Options;
 using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
@@ -85,6 +86,29 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IImageClassifier, ImageClassifierService>();
 
         services.TryAddSingleton<ITelegramProxy, TelegramProxy>();
+
+        return services;
+    }
+
+    public static IServiceCollection ConfigureCache(this IServiceCollection services, IConfiguration configuration)
+    {
+        var settings = new RedisSettings();
+        configuration.GetSection(RedisSettings.Position).Bind(settings);
+
+        services.AddSingleton(settings);
+
+
+        if (string.IsNullOrWhiteSpace(settings.ConnectionStringTxn))
+        {
+            services.AddDistributedMemoryCache();
+        }
+        else
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = settings.ConnectionStringTxn;
+            });
+        }
 
         return services;
     }

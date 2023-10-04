@@ -4,7 +4,6 @@ using Genocs.Logging;
 using Genocs.Monitoring;
 using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Infrastructure.Extensions;
-using Microsoft.Extensions.Configuration.UserSecrets;
 using Serilog;
 using Serilog.Events;
 using System.Reflection;
@@ -17,12 +16,11 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
 
-
 IHost host = Host.CreateDefaultBuilder(args)
     .UseLogging()
     .ConfigureServices((hostContext, services) =>
     {
-        // Run the hosted service 
+        // Run the hosted service
         services.AddHostedService<MainHostedService>();
 
         services
@@ -31,11 +29,9 @@ IHost host = Host.CreateDefaultBuilder(args)
             .RegisterMongoRepositories(Assembly.GetExecutingAssembly()); // It registers the repositories that has been overridden. No need in case of standard repository
 
         services.AddCustomMassTransit(hostContext.Configuration);
-
-
         services.AddCustomOpenTelemetry(hostContext.Configuration);
-
         services.ConfigureServices(hostContext.Configuration);
+        services.ConfigureCache(hostContext.Configuration);
 
         // Add services to the container.
         services.AddHttpClient();

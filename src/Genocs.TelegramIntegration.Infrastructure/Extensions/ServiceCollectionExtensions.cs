@@ -12,14 +12,14 @@ namespace Genocs.TelegramIntegration.Infrastructure.Extensions;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Setup MassTransit with RabbitMQ transport and MongoDB persistence layer
+    /// Setup MassTransit with RabbitMQ transport and MongoDB persistence layer.
     /// </summary>
     /// <param name="services">The service collection</param>
     /// <param name="configuration">The configuration</param>
     /// <returns>The service collection you can use to create chain</returns>
     public static IServiceCollection AddCustomMassTransit(this IServiceCollection services, IConfiguration configuration)
     {
-        //services.AddMediator();
+        // services.AddMediator();
         services.TryAddSingleton(KebabCaseEndpointNameFormatter.Instance);
 
         var rabbitMQSettings = new RabbitMQSettings();
@@ -30,7 +30,7 @@ public static class ServiceCollectionExtensions
         services.AddMassTransit(x =>
         {
             // Consumer
-            //x.AddConsumersFromNamespaceContaining<RewardProcessedConsumer>();
+            // x.AddConsumersFromNamespaceContaining<RewardProcessedConsumer>();
             x.AddConsumers(Assembly.GetExecutingAssembly());
             x.AddActivities(Assembly.GetExecutingAssembly());
             x.SetKebabCaseEndpointNameFormatter();
@@ -39,7 +39,8 @@ public static class ServiceCollectionExtensions
             x.UsingRabbitMq((context, cfg) =>
             {
                 cfg.ConfigureEndpoints(context);
-                //cfg.UseHealthCheck(context);
+
+                // cfg.UseHealthCheck(context);
                 cfg.Host(rabbitMQSettings.HostName, rabbitMQSettings.VirtualHost,
                     h =>
                     {
@@ -61,7 +62,7 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Configure Proxy and Settings
+    /// Configure Proxy and Settings.
     /// </summary>
     /// <param name="services">The service collection</param>
     /// <param name="configuration">The configuration</param>

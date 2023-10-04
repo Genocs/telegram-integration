@@ -11,13 +11,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Genocs.Core" Version="5.0.0-preview.4.*" />
 		<PackageReference Include="Genocs.Monitoring" Version="5.0.0-preview.4.*" />
 		<PackageReference Include="Genocs.Logging" Version="5.0.0-preview.4.*" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="MassTransit.RabbitMQ" Version="8.1.1" />
 		<PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="7.0.0" />
 		<PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />

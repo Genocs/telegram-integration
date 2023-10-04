@@ -25,11 +25,11 @@ public class TelegramProxy : ITelegramProxy
     private readonly ApiClientSettings _apiClientOptions;
 
     public TelegramProxy(IOptions<TelegramSettings> telegramOptions,
-        ILogger<TelegramProxy> logger,
-        IOptions<OpenAISettings> openAIOptions,
-        IOptions<ApiClientSettings> apiClientOptions,
-        IHttpClientFactory httpClientFactory,
-        IMongoDbRepository<GenocsChat> mongoDbRepository)
+                         ILogger<TelegramProxy> logger,
+                         IOptions<OpenAISettings> openAIOptions,
+                         IOptions<ApiClientSettings> apiClientOptions,
+                         IHttpClientFactory httpClientFactory,
+                         IMongoDbRepository<GenocsChat> mongoDbRepository)
     {
         if (telegramOptions == null) throw new ArgumentNullException(nameof(telegramOptions));
         if (telegramOptions.Value == null) throw new ArgumentNullException(nameof(telegramOptions.Value));
@@ -83,7 +83,7 @@ public class TelegramProxy : ITelegramProxy
 
                         var response = await CallGPT3Async(new OpenAIRequest { prompt = update.Message.Text });
 
-                        if (response != null && response.Choices != null && response.Choices.Any())
+                        if (response != null && response.Choices?.Any() == true)
                         {
                             var choice = response.Choices.FirstOrDefault();
                             if (choice != null)
@@ -142,7 +142,7 @@ public class TelegramProxy : ITelegramProxy
                             continue;
                         }
 
-                        if (!string.IsNullOrEmpty(update.Message.Caption) && update.Message.Caption.ToLower().Contains("tff"))
+                        if (!string.IsNullOrEmpty(update.Message?.Caption) && update.Message.Caption.ToLower().Contains("tff"))
                         {
                             var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
                             continue;
@@ -195,7 +195,6 @@ public class TelegramProxy : ITelegramProxy
 
         return null;
     }
-
 
     private async Task<OpenAIResponse?> CallFormRecognizerAsync(string fileId)
     {

@@ -18,7 +18,6 @@ public class OpenAIService
         if (string.IsNullOrWhiteSpace(openAIOptions.Value.APIKey)) throw new ArgumentNullException("APIKey cannot be null");
         if (string.IsNullOrWhiteSpace(openAIOptions.Value.Url)) throw new ArgumentNullException("Url cannot be null");
 
-
         _httpClient = httpClient;
 
         _httpClient.BaseAddress = new Uri("https://api.openai.com");

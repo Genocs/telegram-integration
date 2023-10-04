@@ -275,6 +275,9 @@ public class TelegramProxy : ITelegramProxy
         GenocsChat chatMessage = new GenocsChat { UpdateId = message.UpdateId };
         await _mongoDbRepository.InsertAsync(chatMessage);
 
+        // Check language
+        // message.Message.From.LanguageCode
+
         // Image
         if (message.Message.Photo != null)
         {

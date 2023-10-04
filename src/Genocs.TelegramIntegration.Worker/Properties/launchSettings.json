@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Genocs.TelegramIntegration.Worker": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": true,
+      "hotReloadEnabled": false
+    }
+  }
+}
+

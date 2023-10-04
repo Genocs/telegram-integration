@@ -1,4 +1,7 @@
 using Genocs.Core.Builders;
+using Genocs.Integration.CognitiveServices.Interfaces;
+using Genocs.Integration.CognitiveServices.Options;
+using Genocs.Integration.CognitiveServices.Services;
 using Genocs.Logging;
 using Genocs.Monitoring;
 using Genocs.Persistence.MongoDb.Extensions;
@@ -9,8 +12,6 @@ using Serilog.Events;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-
-
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
@@ -18,7 +19,6 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .WriteTo.Console()
     .CreateLogger();
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,7 +67,6 @@ services.AddCustomOpenTelemetry(builder.Configuration);
 
 var app = builder.Build();
 
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -75,14 +74,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
 // global cors policy
 app.UseCors(x => x
     .SetIsOriginAllowed(origin => true)
     .AllowAnyMethod()
     .AllowAnyHeader()
     .AllowCredentials());
-
 
 app.UseHttpsRedirection();
 
@@ -97,7 +94,3 @@ app.MapHealthChecks("/hc");
 app.Run();
 
 Log.CloseAndFlush();
-
-
-
-

@@ -1,4 +1,9 @@
-﻿using Genocs.Persistence.MongoDb.Repositories;
+﻿using Amazon.Runtime.Internal;
+using Azure.Core;
+using Genocs.Integration.CognitiveServices.Contracts;
+using Genocs.Integration.CognitiveServices.Interfaces;
+using Genocs.Integration.CognitiveServices.Services;
+using Genocs.Persistence.MongoDb.Repositories;
 using Genocs.TelegramIntegration.Contracts.Models;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Options;
@@ -8,6 +13,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Web;
 using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.GettingUpdates;
@@ -23,13 +29,19 @@ public class TelegramProxy : ITelegramProxy
     private readonly TelegramSettings _telegramOptions;
     private readonly OpenAISettings _openAIOptions;
     private readonly ApiClientSettings _apiClientOptions;
+    private readonly IFormRecognizer _formRecognizerService;
+    private readonly IImageClassifier _formClassifierService;
+
 
     public TelegramProxy(IOptions<TelegramSettings> telegramOptions,
                          ILogger<TelegramProxy> logger,
                          IOptions<OpenAISettings> openAIOptions,
                          IOptions<ApiClientSettings> apiClientOptions,
                          IHttpClientFactory httpClientFactory,
-                         IMongoDbRepository<GenocsChat> mongoDbRepository)
+                         IMongoDbRepository<GenocsChat> mongoDbRepository,
+                         IFormRecognizer formRecognizerService,
+                         IImageClassifier formClassifierService
+        )
     {
         if (telegramOptions == null) throw new ArgumentNullException(nameof(telegramOptions));
         if (telegramOptions.Value == null) throw new ArgumentNullException(nameof(telegramOptions.Value));
@@ -52,10 +64,13 @@ public class TelegramProxy : ITelegramProxy
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         _mongoDbRepository = mongoDbRepository ?? throw new ArgumentNullException(nameof(mongoDbRepository));
+
+        _formRecognizerService = formRecognizerService ?? throw new ArgumentNullException(nameof(formRecognizerService));
+        _formClassifierService = formClassifierService ?? throw new ArgumentNullException(nameof(formClassifierService));
     }
 
     /// <summary>
-    /// It Allows to pull the messages handled by the bot
+    /// It Allows to pull the messages handled by the bot.
     /// </summary>
     public async Task PullUpdatesAsync()
     {
@@ -120,6 +135,7 @@ public class TelegramProxy : ITelegramProxy
                         }
 
                         // Cognitive services integration here
+                        await CognitiveServicesAsync("");
                     }
                 }
             }
@@ -148,7 +164,7 @@ public class TelegramProxy : ITelegramProxy
                             continue;
                         }
 
-                        // Cognitive services integration here
+                        await CognitiveServicesAsync("");
                     }
                 }
             }
@@ -335,5 +351,27 @@ public class TelegramProxy : ITelegramProxy
     {
         GenocsChat chatMessage = new GenocsChat { Message = message };
         await _mongoDbRepository.InsertAsync(chatMessage);
+    }
+
+    private async Task CognitiveServicesAsync(string imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return;
+        }
+
+        // Cognitive services integration here
+        FormExtractorResponse result = new FormExtractorResponse
+        {
+            ResourceUrl = HttpUtility.HtmlDecode(imageUrl)
+        };
+
+        var classification = await _formClassifierService.ClassifyAsync(result.ResourceUrl);
+
+        if (classification != null && classification.Predictions != null && classification.Predictions.Any())
+        {
+            var firstPrediction = classification.Predictions.OrderByDescending(o => o.Probability).First();
+            result.ContentData = await _formRecognizerService.ScanAsync(firstPrediction.TagId!, imageUrl);
+        }
     }
 }

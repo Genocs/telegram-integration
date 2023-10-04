@@ -1,4 +1,7 @@
-﻿using Genocs.TelegramIntegration.Options;
+﻿using Genocs.Integration.CognitiveServices.Interfaces;
+using Genocs.Integration.CognitiveServices.Options;
+using Genocs.Integration.CognitiveServices.Services;
+using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using MassTransit;
@@ -64,14 +67,23 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Configure Proxy and Settings.
     /// </summary>
-    /// <param name="services">The service collection</param>
-    /// <param name="configuration">The configuration</param>
-    /// <returns>The service collection you can use to create chain</returns>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configuration">The configuration.</param>
+    /// <returns>The service collection you can use to create chain.</returns>
     public static IServiceCollection ConfigureServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.Position));
         services.Configure<OpenAISettings>(configuration.GetSection(OpenAISettings.Position));
         services.Configure<ApiClientSettings>(configuration.GetSection(ApiClientSettings.Position));
+
+        services.Configure<AzureCognitiveServicesSettings>(configuration.GetSection(AzureCognitiveServicesSettings.Position));
+        services.Configure<AzureStorageSettings>(configuration.GetSection(AzureStorageSettings.Position));
+        services.Configure<ImageClassifierSettings>(configuration.GetSection(ImageClassifierSettings.Position));
+        services.Configure<AzureCognitiveServicesSettings>(configuration.GetSection(AzureCognitiveServicesSettings.Position));
+
+        services.TryAddSingleton<IFormRecognizer, FormRecognizerService>();
+        services.TryAddSingleton<IImageClassifier, ImageClassifierService>();
+
         services.TryAddSingleton<ITelegramProxy, TelegramProxy>();
 
         return services;

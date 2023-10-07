@@ -33,6 +33,12 @@ public class ClientUnitTests
         Options.ApiClientSettings apiClientOptions = new Options.ApiClientSettings() { FormRecognizerUrl = "TelegramSettingOption" };
         mockApiClientOptions.Setup(ap => ap.Value).Returns(apiClientOptions);
 
+        var mockStripeOptions = new Mock<IOptions<Options.StripeSettings>>();
+
+        // We need to set the Value of IOptions to be the Options.ApiClientSettings Class
+        Options.StripeSettings stripeOptions = new Options.StripeSettings() { Token = "StripeOption" };
+        mockStripeOptions.Setup(ap => ap.Value).Returns(stripeOptions);
+
         // mock logger
         var mockLogger = new Mock<ILogger<TelegramProxy>>();
 
@@ -49,6 +55,7 @@ public class ClientUnitTests
                                                  mockLogger.Object,
                                                  mockOpenAISettings.Object,
                                                  mockApiClientOptions.Object,
+                                                 mockStripeOptions.Object,
                                                  mockHttpClientFactory.Object,
                                                  mockMongoDbRepositoryGenocsChat.Object,
                                                  mockFormRecognizer.Object,

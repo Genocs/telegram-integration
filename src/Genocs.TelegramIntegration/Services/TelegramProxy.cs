@@ -256,6 +256,7 @@ public class TelegramProxy : ITelegramProxy
 
             // Cognitive services integration here
             var formRecognizerResponse = await CallCognitiveServicesAsync(message.Message.Photo.OrderByDescending(c => c.FileSize).First().FileId);
+            await ProcessFormResponse(formRecognizerResponse, message.Message.Chat.Id, message.Message.Chat.FirstName);
             return;
         }
 
@@ -398,4 +399,58 @@ public class TelegramProxy : ITelegramProxy
 
         return result;
     }
+
+    private async Task ProcessFormResponse(FormExtractorResponse? formExtractorResponse, long chatId, string? user)
+    {
+        if (formExtractorResponse == null)
+        {
+            return;
+        }
+
+        if (formExtractorResponse.ContentData == null)
+        {
+            return;
+        }
+
+        if (formExtractorResponse.ContentData.Count <= 0)
+        {
+            return;
+        }
+
+        // Read from list of dynamic data contained into ContentData
+        // Check the RefundAmount field inside the ContentData
+
+        IDictionary<string, object?> dictionaryData = (System.Dynamic.ExpandoObject)formExtractorResponse.ContentData[0];
+
+        if (dictionaryData is null)
+        {
+            return;
+        }
+
+        if (!dictionaryData.ContainsKey("RefundAmount"))
+        {
+            return;
+        }
+
+        FormRecord? refund = JsonSerializer.Deserialize<FormRecord>(JsonSerializer.Serialize(dictionaryData["RefundAmount"]));
+
+        // Use Telegram BOT client to send the voucher barcode image
+        BotClient botClient = new BotClient(_telegramOptions.Token);
+
+        botClient.SendMessage(chatId, $"Hello {user}, we received a TTF with the amount of {refund?.Value} EUR!");
+
+        botClient.SendMessage(chatId, $"Hello {user}, you are eligible to receive a Voucher of 10 times {refund?.Value} EUR!");
+
+        var res = await botClient.SendPhotoAsync(
+                                                 chatId: chatId,
+                                                 photo: "https://qrcode.tec-it.com/API/QRCode?data=tretretfdfdsf",
+                                                 caption: $"This is Your Voucher, please use it during the checkout. It will expire on: {DateTime.UtcNow.AddDays(10).ToLongDateString()}!");
+
+
+
+
+        await Task.CompletedTask;
+    }
 }
+
+public record FormRecord(float? Confidence, string? Value);

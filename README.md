@@ -40,9 +40,6 @@
 [twitterx-shield]: https://img.shields.io/twitter/url/https/twitter.com/genocs.svg?style=social
 [twitterx-url]: https://twitter.com/genocs
 
-
-
-
 <p align="center">
     <img src="./assets/genocs-library-logo.png" alt="icon">
 </p>
@@ -52,10 +49,12 @@
 
 ## Goals
 
-The goal of this repository is to help developers/companies kickstart their Web Application Development with a pre-built Blazor WebAssembly Template that includes several much needed components and features.
+The library is based on the [Telegram Bot API](https://core.telegram.org/bots/api).
+The goal of this repository is to help developers/companies to implement solution based on Telegram Integration with AI services.
+The solution contains integration with the following services:
+ - Azure Cognitive Services to implement semantic ETL (Extraction Transformation and Loading).
+ - OpenAI for the implementation of a chatbot that can be used to interact with the user.
 
-> Note that this is a frontend/client application only! The backend for this application is available in a seperate repository. 
-> - Find Genocs's .NET Web API template here - [microservice-template](https://github.com/Genocs/microservice-template)
 
 ## Prerequisites
 
@@ -104,12 +103,18 @@ az servicebus queue create --resource-group rg-genocs --namespace-name asb-genoc
 
 # get the connection string
 az servicebus namespace authorization-rule keys list --resource-group rg-genocs --namespace-name asb-genocs --name RootManageSharedAccessKey --query primaryConnectionString --output tsv 
-
 ```
 
-api-workbench.rest
-Use this file inside Visual Studio code with [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) plugin
-For more details on getting started, [read the documentation](https://genocs-blog.netlify.app/blazor-template/general/overview/)
+## How to use NGROK to expose the service to the internet
+- Download ngrok from https://ngrok.com/download
+- unzip the file
+- run the command: ngrok http https://localhost:5091
+- copy the https url and use it to configure the webhook
+
+
+
+
+
 
 ## License
 

@@ -17,8 +17,9 @@ public interface ITelegramProxy
     /// Process a message from Telegram.
     /// </summary>
     /// <param name="message">The message.</param>
+    /// <param name="rawData">The raw data.</param>
     /// <returns>async task.</returns>
-    Task ProcessMessageAsync(Update? message);
+    Task ProcessMessageAsync(Update? message, string? rawData);
     Task LogMessageAsync(string? message);
     Task SendMessageAsync(long recipient, string? message);
 }

@@ -1,17 +1,16 @@
-﻿using Amazon.Runtime.Internal;
-using Azure.Core;
-using Genocs.Integration.CognitiveServices.Contracts;
+﻿using Genocs.Integration.CognitiveServices.Contracts;
 using Genocs.Integration.CognitiveServices.Interfaces;
-using Genocs.Integration.CognitiveServices.Services;
 using Genocs.Persistence.MongoDb.Repositories;
 using Genocs.TelegramIntegration.Contracts.Models;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services.Interfaces;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Web;
 using Telegram.BotAPI;
@@ -31,6 +30,7 @@ public class TelegramProxy : ITelegramProxy
     private readonly ApiClientSettings _apiClientOptions;
     private readonly IFormRecognizer _formRecognizerService;
     private readonly IImageClassifier _formClassifierService;
+    private readonly IDistributedCache _distributedCache;
 
 
     public TelegramProxy(IOptions<TelegramSettings> telegramOptions,
@@ -40,8 +40,8 @@ public class TelegramProxy : ITelegramProxy
                          IHttpClientFactory httpClientFactory,
                          IMongoDbRepository<GenocsChat> mongoDbRepository,
                          IFormRecognizer formRecognizerService,
-                         IImageClassifier formClassifierService
-        )
+                         IImageClassifier formClassifierService,
+                         IDistributedCache distributedCache)
     {
         if (telegramOptions == null) throw new ArgumentNullException(nameof(telegramOptions));
         if (telegramOptions.Value == null) throw new ArgumentNullException(nameof(telegramOptions.Value));
@@ -67,6 +67,7 @@ public class TelegramProxy : ITelegramProxy
 
         _formRecognizerService = formRecognizerService ?? throw new ArgumentNullException(nameof(formRecognizerService));
         _formClassifierService = formClassifierService ?? throw new ArgumentNullException(nameof(formClassifierService));
+        _distributedCache = distributedCache ?? throw new ArgumentNullException(nameof(distributedCache));
     }
 
     /// <summary>
@@ -135,7 +136,7 @@ public class TelegramProxy : ITelegramProxy
                         }
 
                         // Cognitive services integration here
-                        await CognitiveServicesAsync("");
+                        await CallCognitiveServicesAsync("");
                     }
                 }
             }
@@ -164,7 +165,7 @@ public class TelegramProxy : ITelegramProxy
                             continue;
                         }
 
-                        await CognitiveServicesAsync("");
+                        await CallCognitiveServicesAsync("");
                     }
                 }
             }
@@ -212,52 +213,7 @@ public class TelegramProxy : ITelegramProxy
         return null;
     }
 
-    private async Task<OpenAIResponse?> CallFormRecognizerAsync(string fileId)
-    {
-        try
-        {
-            BotClient botClient = new BotClient(_telegramOptions.Token);
-
-            var botFile = await botClient.GetFileAsync(fileId);
-            if (botFile is null)
-            {
-                return null;
-            }
-
-            string urlResource = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{botFile.FilePath}";
-
-            if (string.IsNullOrEmpty(urlResource))
-            {
-                return null;
-            }
-
-            using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _apiClientOptions.FormRecognizerUrl)
-            {
-                Headers =
-                {
-                    { HeaderNames.Accept, "application/json" }
-                },
-                Content = JsonContent.Create(new { Url = urlResource })
-            };
-
-            using var httpClient = _httpClientFactory.CreateClient();
-            var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
-
-            if (httpResponseMessage.IsSuccessStatusCode)
-            {
-                using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
-                return await JsonSerializer.DeserializeAsync<OpenAIResponse>(contentStream);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(500, ex, "ProcessMessageAsync exception while processing CallFormRecognizerAsync");
-        }
-
-        return null;
-    }
-
-    public async Task ProcessMessageAsync(Update? message)
+    public async Task ProcessMessageAsync(Update? message, string? rawData)
     {
         if (message == null)
         {
@@ -287,7 +243,7 @@ public class TelegramProxy : ITelegramProxy
             return;
         }
 
-        GenocsChat chatMessage = new GenocsChat { UpdateId = message.UpdateId };
+        GenocsChat chatMessage = new GenocsChat { UpdateId = message.UpdateId, Message = rawData };
         await _mongoDbRepository.InsertAsync(chatMessage);
 
         // Check language
@@ -299,7 +255,7 @@ public class TelegramProxy : ITelegramProxy
             await SendMessageAsync(message.Message.Chat.Id, $"Hello {message.Message.Chat.FirstName}, I got your image and I'm going to process it!");
 
             // Cognitive services integration here
-            await CallFormRecognizerAsync(message.Message.Photo.First().FileId);
+            var formRecognizerResponse = await CallCognitiveServicesAsync(message.Message.Photo.OrderByDescending(c => c.FileSize).First().FileId);
             return;
         }
 
@@ -353,25 +309,93 @@ public class TelegramProxy : ITelegramProxy
         await _mongoDbRepository.InsertAsync(chatMessage);
     }
 
-    private async Task CognitiveServicesAsync(string imageUrl)
+    private async Task<OpenAIResponse?> CallFormRecognizerAsync(string fileId)
     {
-        if (string.IsNullOrWhiteSpace(imageUrl))
+        try
         {
-            return;
+            BotClient botClient = new BotClient(_telegramOptions.Token);
+
+            var botFile = await botClient.GetFileAsync(fileId);
+            if (botFile is null)
+            {
+                return null;
+            }
+
+            string urlResource = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{botFile.FilePath}";
+
+            if (string.IsNullOrEmpty(urlResource))
+            {
+                return null;
+            }
+
+            using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _apiClientOptions.FormRecognizerUrl)
+            {
+                Headers =
+                {
+                    { HeaderNames.Accept, "application/json" }
+                },
+                Content = JsonContent.Create(new { Url = urlResource })
+            };
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                return await JsonSerializer.DeserializeAsync<OpenAIResponse>(contentStream);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(500, ex, "ProcessMessageAsync exception while processing CallFormRecognizerAsync");
         }
 
-        // Cognitive services integration here
-        FormExtractorResponse result = new FormExtractorResponse
-        {
-            ResourceUrl = HttpUtility.HtmlDecode(imageUrl)
-        };
+        return null;
+    }
 
-        var classification = await _formClassifierService.ClassifyAsync(result.ResourceUrl);
+    private async Task<FormExtractorResponse?> CallCognitiveServicesAsync(string fileId)
+    {
+        FormExtractorResponse result = new FormExtractorResponse();
 
-        if (classification != null && classification.Predictions != null && classification.Predictions.Any())
+        try
         {
-            var firstPrediction = classification.Predictions.OrderByDescending(o => o.Probability).First();
-            result.ContentData = await _formRecognizerService.ScanAsync(firstPrediction.TagId!, imageUrl);
+            if (string.IsNullOrWhiteSpace(fileId))
+            {
+                return null;
+            }
+
+            BotClient botClient = new BotClient(_telegramOptions.Token);
+
+            var botFile = await botClient.GetFileAsync(fileId);
+            if (botFile is null)
+            {
+                return null;
+            }
+
+            string urlResource = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{botFile.FilePath}";
+
+            if (string.IsNullOrEmpty(urlResource))
+            {
+                return null;
+            }
+
+            result.ResourceUrl = HttpUtility.HtmlDecode(urlResource);
+
+            var classification = await _formClassifierService.ClassifyAsync(result.ResourceUrl);
+
+            if (classification != null && classification.Predictions != null && classification.Predictions.Any())
+            {
+                var firstPrediction = classification.Predictions.OrderByDescending(o => o.Probability).First();
+                await _distributedCache.SetAsync("d1fdb12d-c360-4e80-a7e8-75ff63971f0c", Encoding.UTF8.GetBytes("5d3c9567-c874-4bfa-95a1-35588c81be91"));
+                result.ContentData = await _formRecognizerService.ScanAsync(firstPrediction.TagId!, urlResource);
+            }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(500, ex, "ProcessMessageAsync exception while processing CallFormRecognizerAsync");
+        }
+
+        return result;
     }
 }

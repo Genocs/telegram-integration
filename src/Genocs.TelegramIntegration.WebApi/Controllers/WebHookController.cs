@@ -24,10 +24,10 @@ public class WebHookController : ControllerBase
     {
         // This is the only way I found to overcome the issue on deserialize
         // PaymentCheckout payload
-        string ser = JsonSerializer.Serialize(message);
-        Update? update = JsonSerializer.Deserialize<Update>(ser);
+        string dataString = JsonSerializer.Serialize(message);
+        Update? update = JsonSerializer.Deserialize<Update>(dataString);
 
-        await _telegramProxy.ProcessMessageAsync(update);
+        await _telegramProxy.ProcessMessageAsync(update, dataString);
         return Accepted();
     }
 }

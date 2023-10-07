@@ -28,15 +28,18 @@ public class TelegramProxy : ITelegramProxy
     private readonly TelegramSettings _telegramOptions;
     private readonly OpenAISettings _openAIOptions;
     private readonly ApiClientSettings _apiClientOptions;
+    private readonly StripeSettings _stripeOptions;
     private readonly IFormRecognizer _formRecognizerService;
     private readonly IImageClassifier _formClassifierService;
     private readonly IDistributedCache _distributedCache;
 
 
-    public TelegramProxy(IOptions<TelegramSettings> telegramOptions,
+    public TelegramProxy(
+                         IOptions<TelegramSettings> telegramOptions,
                          ILogger<TelegramProxy> logger,
                          IOptions<OpenAISettings> openAIOptions,
                          IOptions<ApiClientSettings> apiClientOptions,
+                         IOptions<StripeSettings> stripeOptions,
                          IHttpClientFactory httpClientFactory,
                          IMongoDbRepository<GenocsChat> mongoDbRepository,
                          IFormRecognizer formRecognizerService,
@@ -60,6 +63,11 @@ public class TelegramProxy : ITelegramProxy
         if (string.IsNullOrWhiteSpace(apiClientOptions.Value.FormRecognizerUrl)) throw new ArgumentNullException("FormRecognizerUrl cannot be null");
 
         _apiClientOptions = apiClientOptions.Value;
+
+        if (stripeOptions == null) throw new ArgumentNullException(nameof(stripeOptions));
+        if (stripeOptions.Value == null) throw new ArgumentNullException(nameof(stripeOptions.Value));
+        if (string.IsNullOrWhiteSpace(stripeOptions.Value.Token)) throw new ArgumentNullException("Token cannot be null");
+        _stripeOptions = stripeOptions.Value;
 
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
@@ -215,7 +223,7 @@ public class TelegramProxy : ITelegramProxy
 
     public async Task ProcessMessageAsync(Update? message, string? rawData)
     {
-        if (message == null)
+        if (message is null)
         {
             _logger.LogError("ProcessMessageAsync: Update message is null");
             return;
@@ -226,10 +234,17 @@ public class TelegramProxy : ITelegramProxy
         {
             BotClient botClient = new BotClient(_telegramOptions.Token);
             botClient.AnswerPreCheckoutQuery(message.PreCheckoutQuery.Id, true);
+
+            // Check if qr code needs to be generated
+            // Send qr code
+            var res = await botClient.SendPhotoAsync(
+                                         chatId: message.PreCheckoutQuery.From.Id,
+                                         photo: $"https://qrcode.tec-it.com/API/QRCode?data={message.PreCheckoutQuery.Id}",
+                                         caption: $"This is Your Voucher, please use it during the checkout. It will expire on: {DateTime.UtcNow.AddDays(10).ToLongDateString()}!");
             return;
         }
 
-        if (message.Message == null)
+        if (message.Message is null)
         {
             _logger.LogError("ProcessMessageAsync: Update message.Message is null");
             return;
@@ -256,7 +271,8 @@ public class TelegramProxy : ITelegramProxy
 
             // Cognitive services integration here
             var formRecognizerResponse = await CallCognitiveServicesAsync(message.Message.Photo.OrderByDescending(c => c.FileSize).First().FileId);
-            await ProcessFormResponse(formRecognizerResponse, message.Message.Chat.Id, message.Message.Chat.FirstName);
+            string? processFormResponse = await ProcessFormResponseAsync(formRecognizerResponse, message.Message.Chat.Id, message.Message.Chat.FirstName);
+            await Checkout(message.Message.Chat.Id, processFormResponse);
             return;
         }
 
@@ -400,21 +416,21 @@ public class TelegramProxy : ITelegramProxy
         return result;
     }
 
-    private async Task ProcessFormResponse(FormExtractorResponse? formExtractorResponse, long chatId, string? user)
+    private async Task<string?> ProcessFormResponseAsync(FormExtractorResponse? formExtractorResponse, long chatId, string? user)
     {
         if (formExtractorResponse == null)
         {
-            return;
+            return null;
         }
 
         if (formExtractorResponse.ContentData == null)
         {
-            return;
+            return null;
         }
 
         if (formExtractorResponse.ContentData.Count <= 0)
         {
-            return;
+            return null;
         }
 
         // Read from list of dynamic data contained into ContentData
@@ -424,12 +440,12 @@ public class TelegramProxy : ITelegramProxy
 
         if (dictionaryData is null)
         {
-            return;
+            return null;
         }
 
         if (!dictionaryData.ContainsKey("RefundAmount"))
         {
-            return;
+            return null;
         }
 
         FormRecord? refund = JsonSerializer.Deserialize<FormRecord>(JsonSerializer.Serialize(dictionaryData["RefundAmount"]));
@@ -437,19 +453,35 @@ public class TelegramProxy : ITelegramProxy
         // Use Telegram BOT client to send the voucher barcode image
         BotClient botClient = new BotClient(_telegramOptions.Token);
 
-        botClient.SendMessage(chatId, $"Hello {user}, we received a TTF with the amount of {refund?.Value} EUR!");
+        await botClient.SendMessageAsync(chatId, $"Hello {user}, we received a TTF with the amount of {refund?.Value} EUR!");
 
-        botClient.SendMessage(chatId, $"Hello {user}, you are eligible to receive a Voucher of 10 times {refund?.Value} EUR!");
+        await botClient.SendMessageAsync(chatId, $"Hello {user}, you are eligible to receive a Voucher of 10 times {refund?.Value} EUR!");
 
-        var res = await botClient.SendPhotoAsync(
-                                                 chatId: chatId,
-                                                 photo: "https://qrcode.tec-it.com/API/QRCode?data=tretretfdfdsf",
-                                                 caption: $"This is Your Voucher, please use it during the checkout. It will expire on: {DateTime.UtcNow.AddDays(10).ToLongDateString()}!");
+        return refund?.Value;
+    }
 
+    private async Task Checkout(long chatId, string? amount)
+    {
+        if (decimal.TryParse(amount, out decimal value))
+        {
+            // Use Telegram BOT client to send the voucher barcode image
+            BotClient botClient = new BotClient(_telegramOptions.Token);
 
+            SendInvoiceArgs sendInvoiceArgs = new SendInvoiceArgs(
+                                                                  chatId: chatId,
+                                                                  title: "Genocs Voucher",
+                                                                  description: $"Voucher of 10 times {amount} EUR!",
+                                                                  payload: "GenocsVoucher",
+                                                                  providerToken: _stripeOptions.Token,
+                                                                  currency: "EUR",
+                                                                  prices: new List<LabeledPrice>
+                                                                  {
+                                                                  new LabeledPrice("Voucher", (int)(value * 1000))
+                                                                  });
 
+            await botClient.SendInvoiceAsync(sendInvoiceArgs);
+        }
 
-        await Task.CompletedTask;
     }
 }
 

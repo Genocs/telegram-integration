@@ -76,6 +76,7 @@ public static class ServiceCollectionExtensions
         services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.Position));
         services.Configure<OpenAISettings>(configuration.GetSection(OpenAISettings.Position));
         services.Configure<ApiClientSettings>(configuration.GetSection(ApiClientSettings.Position));
+        services.Configure<StripeSettings>(configuration.GetSection(StripeSettings.Position));
 
         services.Configure<AzureCognitiveServicesSettings>(configuration.GetSection(AzureCognitiveServicesSettings.Position));
         services.Configure<AzureStorageSettings>(configuration.GetSection(AzureStorageSettings.Position));

@@ -50,7 +50,6 @@ jobs:
 
       - name: Build and push image to Dockerhub
         run: |
-          docker build -t ${{secrets.DOCKER_USERNAME}}/telegram_integration-webapi:${{github.event.inputs.version}} .
+          docker build -f webapi.dockerfile -t ${{secrets.DOCKER_USERNAME}}/telegram_integration-webapi:${{github.event.inputs.version}} -t ${{secrets.DOCKER_USERNAME}}/telegram_integration-webapi:latest .
           docker push ${{secrets.DOCKER_USERNAME}}/telegram_integration-webapi:${{github.event.inputs.version}}
-          docker build -t ${{secrets.DOCKER_USERNAME}}/telegram_integration-webapi:latest .
           docker push ${{secrets.DOCKER_USERNAME}}/telegram_integration-webapi:latest

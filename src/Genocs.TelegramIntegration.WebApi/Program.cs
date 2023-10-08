@@ -22,7 +22,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host
         .UseLogging();
 
-// add services to DI container
 var services = builder.Services;
 
 services
@@ -54,9 +53,8 @@ services.AddSwaggerGen();
 
 // Add MassTransit bus configuration
 services.AddCustomMassTransit(builder.Configuration);
-
-services.ConfigureServices(builder.Configuration);
-services.ConfigureCache(builder.Configuration);
+services.AddCustomServices(builder.Configuration);
+services.AddCustomCache(builder.Configuration);
 
 services.AddOptions();
 

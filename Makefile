@@ -1,13 +1,13 @@
 build:
 	dotnet build
 start:
-	dotnet run --project src/Host/Host.csproj
+	dotnet run --project ./src/Genocs.TelegramIntegration.WebApi
 nuget:
-	nuget pack -NoDefaultExcludes -OutputDirectory nupkg
+	nuget pack -NoDefaultExcludes -OutputDirectory nupkgs
 publish:
 	dotnet publish --os linux --arch x64 -c Release --self-contained
 publish-to-hub:
-	dotnet publish --os linux --arch x64 -c Release -p:ContainerRegistry=docker.io -p:ContainerImageName=genocs/dotnet-webapi --self-contained
+	dotnet publish --os linux --arch x64 -c Release -p:ContainerRegistry=docker.io -p:ContainerImageName=genocs/telegram_integration-webapi --self-contained
 tp: # terraform plan
 	cd terraform/environments/staging && terraform plan
 ta: # terraform apply
@@ -23,4 +23,4 @@ fds: # force rededeploy aws ecs service
 gw: # git docker workflow to push docker image to the repository based on the main branch
 	@echo triggering github workflow to push docker image to container
 	@echo ensure that you have the gh-cli installed and authenticated.
-	gh workflow run dotnet-cicd -f push_to_docker=true
+	gh workflow run dockerhub-publish -f push_to_docker=true

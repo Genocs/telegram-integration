@@ -16,10 +16,17 @@ public class OpenAIRequest
 
 public class Choice
 {
-    public string? text { get; set; }
-    public int index { get; set; }
-    public object? logprobs { get; set; }
-    public string? finish_reason { get; set; }
+    [JsonPropertyName("text")]
+    public string? Text { get; set; }
+
+    [JsonPropertyName("index")]
+    public int Index { get; set; }
+
+    [JsonPropertyName("logprobs")]
+    public object? LogProbs { get; set; }
+
+    [JsonPropertyName("finish_reason")]
+    public string? FinishReason { get; set; }
 }
 
 public class OpenAIResponse
@@ -45,7 +52,12 @@ public class OpenAIResponse
 
 public class Usage
 {
-    public int prompt_tokens { get; set; }
-    public int completion_tokens { get; set; }
-    public int total_tokens { get; set; }
+    [JsonPropertyName("prompt_tokens")]
+    public int PromptTokens { get; set; }
+
+    [JsonPropertyName("completion_tokens")]
+    public int CompletionTokens { get; set; }
+
+    [JsonPropertyName("total_tokens")]
+    public int TotalTokens { get; set; }
 }

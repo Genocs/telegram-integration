@@ -1,12 +1,27 @@
 ﻿namespace Genocs.TelegramIntegration.Contracts.Options;
+
+/// <summary>
+/// Redis settings.
+/// </summary>
 public class RedisSettings
 {
     public const string Position = "Redis";
+
+    /// <summary>
+    /// The Admin connection string.
+    /// </summary>
     public string ConnectionStringAdmin => $"{ConnectionStringTxn},allowAdmin=true";
 
-    public string ConnectionStringTxn { get; internal set; }
+    /// <summary>
+    /// The connection string.
+    /// </summary>
+    public string? ConnectionStringTxn { get; internal set; }
 
-    public override string ToString()
+    /// <summary>
+    /// To String override behavior.
+    /// </summary>
+    /// <returns></returns>
+    public override string? ToString()
     {
         return ConnectionStringTxn;
     }

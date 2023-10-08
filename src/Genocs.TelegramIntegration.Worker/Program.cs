@@ -30,8 +30,8 @@ IHost host = Host.CreateDefaultBuilder(args)
 
         services.AddCustomMassTransit(hostContext.Configuration);
         services.AddCustomOpenTelemetry(hostContext.Configuration);
-        services.ConfigureServices(hostContext.Configuration);
-        services.ConfigureCache(hostContext.Configuration);
+        services.AddCustomServices(hostContext.Configuration);
+        services.AddCustomCache(hostContext.Configuration);
 
         // Add services to the container.
         services.AddHttpClient();

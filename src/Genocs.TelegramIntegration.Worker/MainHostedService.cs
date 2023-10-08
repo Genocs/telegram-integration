@@ -23,8 +23,9 @@ public class MainHostedService : IHostedService, IDisposable
         if (_disposed)
         {
             _disposed = true;
-            if (_timer != null) { _timer.Dispose(); }
+            _timer?.Dispose();
         }
+
         GC.SuppressFinalize(this);
     }
 
@@ -32,8 +33,11 @@ public class MainHostedService : IHostedService, IDisposable
     {
         _logger.LogInformation("Timed Hosted Service running.");
 
-        _timer = new Timer(DoWork, null, TimeSpan.Zero,
-            TimeSpan.FromSeconds(20));
+        _timer = new Timer(
+                            DoWork,
+                            null,
+                            TimeSpan.Zero,
+                            TimeSpan.FromSeconds(20));
 
         return Task.CompletedTask;
 
@@ -42,12 +46,13 @@ public class MainHostedService : IHostedService, IDisposable
     public Task StopAsync(CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
-        //return _bus.StopAsync(cancellationToken);
+
+        // return _bus.StopAsync(cancellationToken);
     }
 
     private void DoWork(object? state)
     {
-        var count = Interlocked.Increment(ref _executionCount);
+        int count = Interlocked.Increment(ref _executionCount);
 
         Task.Run(_proxy.PullUpdatesAsync);
 

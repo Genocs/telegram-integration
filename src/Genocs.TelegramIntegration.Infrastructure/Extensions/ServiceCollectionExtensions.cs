@@ -18,9 +18,9 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Setup MassTransit with RabbitMQ transport and MongoDB persistence layer.
     /// </summary>
-    /// <param name="services">The service collection</param>
-    /// <param name="configuration">The configuration</param>
-    /// <returns>The service collection you can use to create chain</returns>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configuration">The configuration.</param>
+    /// <returns>The service collection you can use to create chain.</returns>
     public static IServiceCollection AddCustomMassTransit(this IServiceCollection services, IConfiguration configuration)
     {
         // services.AddMediator();
@@ -45,18 +45,20 @@ public static class ServiceCollectionExtensions
                 cfg.ConfigureEndpoints(context);
 
                 // cfg.UseHealthCheck(context);
-                cfg.Host(rabbitMQSettings.HostName, rabbitMQSettings.VirtualHost,
-                    h =>
-                    {
-                        h.Username(rabbitMQSettings.UserName);
-                        h.Password(rabbitMQSettings.Password);
+                cfg.Host(
+                         rabbitMQSettings.HostName,
+                         rabbitMQSettings.VirtualHost,
+                         rabbitMQSettings.ConnectionName,
+                         h =>
+                         {
+                             h.Username(rabbitMQSettings.UserName);
+                             h.Password(rabbitMQSettings.Password);
 
-                        //h.UseSsl(s =>
-                        //{
-                        //    s.Protocol = SslProtocols.Tls12;
-                        //});
-                    }
-                );
+                             // h.UseSsl(s =>
+                             // {
+                             //    s.Protocol = SslProtocols.Tls12;
+                             // });
+                         });
             });
 
             // Persistence MongoDB
@@ -71,7 +73,7 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The configuration.</param>
     /// <returns>The service collection you can use to create chain.</returns>
-    public static IServiceCollection ConfigureServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddCustomServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.Position));
         services.Configure<OpenAISettings>(configuration.GetSection(OpenAISettings.Position));
@@ -91,13 +93,18 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection ConfigureCache(this IServiceCollection services, IConfiguration configuration)
+    /// <summary>
+    /// Add custom cache. The system can use Redis cache or default InMemory Cache.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configuration">The configuration.</param>
+    /// <returns>The service collection you can use to create chain.</returns>
+    public static IServiceCollection AddCustomCache(this IServiceCollection services, IConfiguration configuration)
     {
         var settings = new RedisSettings();
         configuration.GetSection(RedisSettings.Position).Bind(settings);
 
         services.AddSingleton(settings);
-
 
         if (string.IsNullOrWhiteSpace(settings.ConnectionStringTxn))
         {

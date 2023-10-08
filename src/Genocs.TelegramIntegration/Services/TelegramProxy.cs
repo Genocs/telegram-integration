@@ -112,7 +112,7 @@ public class TelegramProxy : ITelegramProxy
                             var choice = response.Choices.FirstOrDefault();
                             if (choice != null)
                             {
-                                var res = botClient.SendMessage(update.Message.Chat.Id, choice.text);
+                                var res = botClient.SendMessage(update.Message.Chat.Id, choice.Text);
                             }
                         }
                     }
@@ -306,7 +306,7 @@ public class TelegramProxy : ITelegramProxy
             var choice = response.Choices.FirstOrDefault();
             if (choice != null)
             {
-                await SendMessageAsync(message.Message.From.Id, choice.text);
+                await SendMessageAsync(message.Message.From.Id, choice.Text);
             }
         }
     }

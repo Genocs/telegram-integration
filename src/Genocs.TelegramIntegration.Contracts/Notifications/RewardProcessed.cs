@@ -1,5 +1,4 @@
-﻿
-namespace Genocs.Fiscanner.Contracts.Notifications;
+﻿namespace Genocs.Fiscanner.Contracts.Notifications;
 
 public interface RewardProcessed
 {

@@ -11,6 +11,7 @@ WORKDIR /src
 COPY ["src/Genocs.TelegramIntegration.WebApi", "src/Genocs.TelegramIntegration.WebApi/"]
 COPY ["src/Genocs.TelegramIntegration.Contracts", "src/Genocs.TelegramIntegration.Contracts/"]
 COPY ["src/Genocs.TelegramIntegration", "src/Genocs.TelegramIntegration/"]
+COPY ["src/Genocs.TelegramIntegration.Infrastructure", "src/Genocs.TelegramIntegration.Infrastructure/"]
 
 COPY ["LICENSE", "LICENSE"]
 COPY ["icon.png", "icon.png"]

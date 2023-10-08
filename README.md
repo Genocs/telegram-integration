@@ -57,9 +57,18 @@ The solution contains integration with the following services:
 
 
 ## Prerequisites
+Make sure you have following accounts:
+- [Telegram](https://telegram.org/) account
+- [Azure](https://azure.microsoft.com/) account
+- [OpenAI](https://openai.com/) account
+- [NGROK](https://ngrok.com/) account
+- [Stripe](https://stripe.com/) account
+- [MonogDB](https://www.mongodb.com/) account
+- [CloudAmqp](https://www.cloudamqp.com/) account
 
-- Make sure you have the [Genocs Backend]( https://github.com/Genocs/microservice-template) API Running.
-- Once Genocs's .NET Web API is up and running, run the Blazor WebAssembly Project to consume it's services.
+On Azure you need to create the following resources:
+- Azure Cognitive Services account
+- Azure Storage account
 
 ## Getting Started
 
@@ -73,8 +82,10 @@ dotnet build
 # Run tests
 dotnet test
 
-# Run worker
+# Run webapi
 dotnet run --project .\src\Genocs.TelegramIntegration.WebApi
+
+# Run worker
 dotnet run --project .\src\Genocs.TelegramIntegration.Worker
 
 # ** DOCKER ** #
@@ -89,32 +100,17 @@ docker push genocs/telegram_integration-webapi:latest
 docker push genocs/telegram_integration-worker:2.1.0
 docker push genocs/telegram_integration-worker:latest
 
-# Push image on dockerhub
+# Run with docker compose
 docker-compose up
 ```
 
 
-``` PS
-# Create the namespace
-az servicebus namespace create --resource-group rg-genocs --name asb-genocs --location "West Europe"
-
-# Create the queue
-az servicebus queue create --resource-group rg-genocs --namespace-name asb-genocs --name queue_1
-
-# get the connection string
-az servicebus namespace authorization-rule keys list --resource-group rg-genocs --namespace-name asb-genocs --name RootManageSharedAccessKey --query primaryConnectionString --output tsv 
-```
-
 ## How to use NGROK to expose the service to the internet
+
 - Download ngrok from https://ngrok.com/download
 - unzip the file
 - run the command: ngrok http https://localhost:5091
 - copy the https url and use it to configure the webhook
-
-
-
-
-
 
 ## License
 

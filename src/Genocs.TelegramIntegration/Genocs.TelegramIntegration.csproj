@@ -8,7 +8,7 @@
 
 	<ItemGroup>
         <PackageReference Include="Genocs.Integration.CognitiveServices" Version="4.0.0-rc3.1" />
-        <PackageReference Include="Genocs.Persistence.MongoDb" Version="5.0.0-preview.4.*" />
+        <PackageReference Include="Genocs.Persistence.MongoDb" Version="5.0.0.pre.preview.*" />
 		<PackageReference Include="Genocs.Core" Version="5.0.0-preview.4.*" />
 	</ItemGroup>
 

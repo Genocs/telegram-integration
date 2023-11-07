@@ -4,14 +4,29 @@ namespace Genocs.TelegramIntegration.Contracts.Models;
 
 public class OpenAIRequest
 {
-    public string model { get; set; } = "text-davinci-003";
-    public string? prompt { get; set; }
-    public double temperature { get; set; } = 0.5;
-    public int max_tokens { get; set; } = 60;
-    public int top_p { get; set; } = 1;
-    public double frequency_penalty { get; set; } = 0.5;
-    public int presence_penalty { get; set; }
-    public List<string> stop { get; set; } = new List<string> { "You:" };
+    [JsonPropertyName("model")]
+    public string Model { get; set; } = "text-davinci-003";
+
+    [JsonPropertyName("prompt")]
+    public string? Prompt { get; set; }
+
+    [JsonPropertyName("temperature")]
+    public double Temperature { get; set; } = 0.5;
+
+    [JsonPropertyName("max_tokens")]
+    public int MaxTokens { get; set; } = 60;
+
+    [JsonPropertyName("top_p")]
+    public int TopP { get; set; } = 1;
+
+    [JsonPropertyName("frequency_penalty")]
+    public double FrequencyPenalty { get; set; } = 0.5;
+
+    [JsonPropertyName("presence_penalty")]
+    public int PresencePenalty { get; set; }
+
+    [JsonPropertyName("stop")]
+    public List<string> Stop { get; set; } = new List<string> { "You:" };
 }
 
 public class Choice

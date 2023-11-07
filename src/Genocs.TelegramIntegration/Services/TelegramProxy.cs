@@ -33,7 +33,6 @@ public class TelegramProxy : ITelegramProxy
     private readonly IImageClassifier _formClassifierService;
     private readonly IDistributedCache _distributedCache;
 
-
     public TelegramProxy(
                          IOptions<TelegramSettings> telegramOptions,
                          ILogger<TelegramProxy> logger,
@@ -89,7 +88,7 @@ public class TelegramProxy : ITelegramProxy
 
         var updates = botClient.GetUpdates();
 
-        if (updates != null && updates.Any())
+        if (updates?.Any() == true)
         {
             // Check Texts
             var textToUpdates = updates.Where(c => c.Message != null && !string.IsNullOrWhiteSpace(c.Message.Text));
@@ -105,7 +104,7 @@ public class TelegramProxy : ITelegramProxy
                         GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
                         await _mongoDbRepository.InsertAsync(genocsChat);
 
-                        var response = await CallGPT3Async(new OpenAIRequest { prompt = update.Message.Text });
+                        var response = await CallGPTAsync(new OpenAIRequest { Prompt = update.Message.Text });
 
                         if (response != null && response.Choices?.Any() == true)
                         {
@@ -197,7 +196,7 @@ public class TelegramProxy : ITelegramProxy
         }
     }
 
-    private async Task<OpenAIResponse?> CallGPT3Async(OpenAIRequest request)
+    private async Task<OpenAIResponse?> CallGPTAsync(OpenAIRequest request)
     {
         using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _openAIOptions.Url)
         {
@@ -299,7 +298,7 @@ public class TelegramProxy : ITelegramProxy
         }
 
         // Generic test call GPT3
-        var response = await CallGPT3Async(new OpenAIRequest { prompt = message.Message.Text });
+        var response = await CallGPTAsync(new OpenAIRequest { Prompt = message.Message.Text });
 
         if (response != null && response.Choices != null && response.Choices.Any())
         {

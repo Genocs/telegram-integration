@@ -3,6 +3,8 @@
 /// <summary>
 /// Placeholder for LangChainUpdate.
 /// </summary>
-public class LangChainUpdate
+public class LangChainResponse
 {
+    public long botUserId { get; set; }
+
 }

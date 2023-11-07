@@ -6,23 +6,23 @@ using MassTransit;
 
 namespace Genocs.TelegramIntegration.Worker.Consumers;
 
-public class LangChainUpdateConsumer : IConsumer<LangChainUpdate>
+public class LangChainResponseConsumer : IConsumer<LangChainResponse>
 {
-    private readonly ILogger<LangChainUpdateConsumer> _logger;
+    private readonly ILogger<LangChainResponseConsumer> _logger;
     private readonly ITelegramProxy _telegramProxy;
 
 
-    public LangChainUpdateConsumer(
-                                    ILogger<LangChainUpdateConsumer> logger,
+    public LangChainResponseConsumer(
+                                    ILogger<LangChainResponseConsumer> logger,
                                     ITelegramProxy telegramProxy)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _telegramProxy = telegramProxy ?? throw new ArgumentNullException(nameof(telegramProxy));
     }
 
-    public async Task Consume(ConsumeContext<LangChainUpdate> context)
+    public async Task Consume(ConsumeContext<LangChainResponse> context)
     {
-        _logger.LogInformation("Received LangChainUpdate");
+        _logger.LogInformation("Received LangChainResponse");
         await Task.CompletedTask;
     }
 }

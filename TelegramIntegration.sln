@@ -17,13 +17,21 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Genocs.TelegramIntegration.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Solution Items", "_Solution Items", "{ED15336C-78BC-4F5F-8CA3-0E811DF96BF9}"
 	ProjectSection(SolutionItems) = preProject
+		CODE_OF_CONDUCT.md = CODE_OF_CONDUCT.md
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
 		docker-compose.yml = docker-compose.yml
+		dotnet.ruleset = dotnet.ruleset
+		global.json = global.json
+		launchSettings.json = launchSettings.json
+		LICENSE = LICENSE
 		README.md = README.md
+		stylecop.json = stylecop.json
 		webapi.dockerfile = webapi.dockerfile
 		worker.dockerfile = worker.dockerfile
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Genocs.TelegramIntegration.Infrastructure", "src\Genocs.TelegramIntegration.Infrastructure\Genocs.TelegramIntegration.Infrastructure.csproj", "{A990579B-DE01-4946-991E-5B53B7351CD3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Genocs.TelegramIntegration.Infrastructure", "src\Genocs.TelegramIntegration.Infrastructure\Genocs.TelegramIntegration.Infrastructure.csproj", "{A990579B-DE01-4946-991E-5B53B7351CD3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

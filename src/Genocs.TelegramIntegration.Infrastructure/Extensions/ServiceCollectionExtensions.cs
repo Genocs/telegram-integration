@@ -34,9 +34,10 @@ public static class ServiceCollectionExtensions
         services.AddMassTransit(x =>
         {
             // Consumer
-            // x.AddConsumersFromNamespaceContaining<RewardProcessedConsumer>();
-            x.AddConsumers(Assembly.GetExecutingAssembly());
-            x.AddActivities(Assembly.GetExecutingAssembly());
+            // x.AddConsumersFromNamespaceContaining<LangChainResponse>();
+            x.AddConsumers(Assembly.GetEntryAssembly());
+
+            // x.AddActivities(Assembly.GetExecutingAssembly());
             x.SetKebabCaseEndpointNameFormatter();
 
             // Transport RabbitMQ

@@ -118,7 +118,7 @@ This project is licensed with the [MIT license](LICENSE).
 
 ## Changelogs
 
-View Complete [Changelogs](https://github.com/Genocs/microservice-template/blob/main/CHANGELOGS.md).
+View Complete [Changelogs](https://github.com/Genocs/microservice-template/blob/main/CHANGELOG.md).
 
 ## Community
 

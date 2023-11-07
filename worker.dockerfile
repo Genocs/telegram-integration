@@ -5,15 +5,15 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
 WORKDIR /src
-COPY ["src/Genocs.TelegramIntegration.Worker", "src/Genocs.TelegramIntegration.Worker/"]
-COPY ["src/Genocs.TelegramIntegration.Contracts", "src/Genocs.TelegramIntegration.Contracts/"]
-COPY ["src/Genocs.TelegramIntegration", "src/Genocs.TelegramIntegration/"]
-COPY ["src/Genocs.TelegramIntegration.Infrastructure", "src/Genocs.TelegramIntegration.Infrastructure/"]
+COPY ["src/Genocs.TelegramIntegration.Worker", "Genocs.TelegramIntegration.Worker/"]
+COPY ["src/Genocs.TelegramIntegration.Contracts", "Genocs.TelegramIntegration.Contracts/"]
+COPY ["src/Genocs.TelegramIntegration", "Genocs.TelegramIntegration/"]
+COPY ["src/Genocs.TelegramIntegration.Infrastructure", "Genocs.TelegramIntegration.Infrastructure/"]
 
 COPY ["LICENSE", "LICENSE"]
 COPY ["icon.png", "icon.png"]
 
-WORKDIR "/src/src/Genocs.TelegramIntegration.Worker"
+WORKDIR "/src/Genocs.TelegramIntegration.Worker"
 
 RUN dotnet restore "Genocs.TelegramIntegration.Worker.csproj"
 

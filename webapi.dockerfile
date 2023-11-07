@@ -8,15 +8,15 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
 WORKDIR /src
-COPY ["src/Genocs.TelegramIntegration.WebApi", "src/Genocs.TelegramIntegration.WebApi/"]
-COPY ["src/Genocs.TelegramIntegration.Contracts", "src/Genocs.TelegramIntegration.Contracts/"]
-COPY ["src/Genocs.TelegramIntegration", "src/Genocs.TelegramIntegration/"]
-COPY ["src/Genocs.TelegramIntegration.Infrastructure", "src/Genocs.TelegramIntegration.Infrastructure/"]
+COPY ["src/Genocs.TelegramIntegration.WebApi", "Genocs.TelegramIntegration.WebApi/"]
+COPY ["src/Genocs.TelegramIntegration.Contracts", "Genocs.TelegramIntegration.Contracts/"]
+COPY ["src/Genocs.TelegramIntegration", "Genocs.TelegramIntegration/"]
+COPY ["src/Genocs.TelegramIntegration.Infrastructure", "Genocs.TelegramIntegration.Infrastructure/"]
 
 COPY ["LICENSE", "LICENSE"]
 COPY ["icon.png", "icon.png"]
 
-WORKDIR "/src/src/Genocs.TelegramIntegration.WebApi"
+WORKDIR "/src/Genocs.TelegramIntegration.WebApi"
 
 RUN dotnet restore "Genocs.TelegramIntegration.WebApi.csproj"
 

@@ -6,15 +6,15 @@ using MassTransit;
 
 namespace Genocs.TelegramIntegration.Worker.Consumers;
 
-public class RewardProcessedConsumer : IConsumer<RewardProcessed>
+public class RewardNotifiedConsumer : IConsumer<RewardNotified>
 {
-    private readonly ILogger<RewardProcessedConsumer> _logger;
+    private readonly ILogger<RewardNotifiedConsumer> _logger;
     private readonly ITelegramProxy _telegramProxy;
     private readonly IMongoDbRepository<UserChat> _usersChatRepository;
     private readonly IMongoDbRepository<LocalizedMessage> _localizedMessagesRepository;
 
-    public RewardProcessedConsumer(
-                                    ILogger<RewardProcessedConsumer> logger,
+    public RewardNotifiedConsumer(
+                                    ILogger<RewardNotifiedConsumer> logger,
                                     ITelegramProxy telegramProxy,
                                     IMongoDbRepository<UserChat> usersChatRepository,
                                     IMongoDbRepository<LocalizedMessage> localizedMessagesRepository)
@@ -25,9 +25,9 @@ public class RewardProcessedConsumer : IConsumer<RewardProcessed>
         _localizedMessagesRepository = localizedMessagesRepository ?? throw new ArgumentNullException(nameof(localizedMessagesRepository));
     }
 
-    public async Task Consume(ConsumeContext<RewardProcessed> context)
+    public async Task Consume(ConsumeContext<RewardNotified> context)
     {
-        _logger.LogInformation("Received RewardProcessed");
+        _logger.LogInformation("Received RewardNotified");
 
         var user = await _usersChatRepository.FirstOrDefaultAsync(c => c.MemberId == context.Message.MemberId);
 
@@ -38,9 +38,21 @@ public class RewardProcessedConsumer : IConsumer<RewardProcessed>
 
         if (localizedMessage is null) return;
 
-        await _telegramProxy.SendMessageAsync(user.ChatId,
-                                        string.Format(localizedMessage.Message,
-                                                        context.Message.Metadata["amount"],
-                                                        context.Message.Metadata["reward_amount"]));
+        switch (context.Message.NotificationTag)
+        {
+            case "voucher_issued":
+                await _telegramProxy.SendMessageAsync(user.ChatId,
+                                                        string.Format(localizedMessage.Message,
+                                                                        context.Message.Metadata["amount"],
+                                                                        context.Message.Metadata["reward_amount"]));
+                break;
+
+            case "reward_issued":
+                await _telegramProxy.SendMessageAsync(user.ChatId,
+                                                        string.Format(localizedMessage.Message,
+                                                                        context.Message.Metadata["amount"],
+                                                                        context.Message.Metadata["reward_amount"]));
+                break;
+        }
     }
 }

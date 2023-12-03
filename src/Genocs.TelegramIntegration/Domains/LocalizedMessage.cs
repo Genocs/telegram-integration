@@ -1,10 +1,11 @@
 ﻿using Genocs.Core.Domain.Repositories;
-using Genocs.Persistence.MongoDb.Repositories;
+using Genocs.Persistence.MongoDb.Repositories.Clean;
+using MongoDB.Bson;
 
 namespace Genocs.TelegramIntegration.Domains;
 
 [TableMapping("LocalizedMessages")]
-public class LocalizedMessage : Core.Domain.Entities.AggregateRoot<Guid>, IMongoDbEntity
+public class LocalizedMessage : Core.Domain.Entities.AggregateRoot<ObjectId>, IMongoDbEntity
 {
     public string LanguageId { get; set; } = default!;
     public string NotificationTag { get; set; } = default!;

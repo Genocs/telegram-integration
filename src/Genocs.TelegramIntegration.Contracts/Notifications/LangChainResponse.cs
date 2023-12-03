@@ -6,5 +6,4 @@
 public class LangChainResponse
 {
     public long botUserId { get; set; }
-
 }

@@ -1,6 +1,6 @@
 ﻿namespace Genocs.Fiscanner.Contracts.Notifications;
 
-public record RewardProcessed
+public record RewardNotified
 {
     public string MemberId { get; init; }
     public string NotificationTag { get; init; }

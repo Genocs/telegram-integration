@@ -1,6 +1,7 @@
 using Genocs.Core.Builders;
 using Genocs.Logging;
 using Genocs.Monitoring;
+using Genocs.Metrics.AppMetrics;
 using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Infrastructure.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -26,10 +27,12 @@ var services = builder.Services;
 
 services
     .AddGenocs(builder.Configuration)
+    .AddMetrics()
     .AddMongoFast() // It adds the MongoDb Repository to the project and register all the Domain Objects with the standard interface
     .RegisterMongoRepositories(Assembly.GetExecutingAssembly()); // It registers the repositories that has been overridden. No need in case of standard repository
 
 services.AddCors();
+
 services.AddControllers().AddJsonOptions(x =>
 {
     // serialize Enums as strings in api responses (e.g. Role)
@@ -37,9 +40,6 @@ services.AddControllers().AddJsonOptions(x =>
 });
 
 services.AddHealthChecks();
-
-// Add services to the container.
-services.AddHttpClient();
 
 services.Configure<HealthCheckPublisherOptions>(options =>
 {
@@ -50,6 +50,9 @@ services.Configure<HealthCheckPublisherOptions>(options =>
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
+
+// Add services to the container.
+services.AddHttpClient();
 
 // Add MassTransit bus configuration
 services.AddCustomMassTransit(builder.Configuration);

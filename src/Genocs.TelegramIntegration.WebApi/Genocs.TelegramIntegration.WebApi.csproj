@@ -9,8 +9,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Genocs.Logging" Version="5.0.*" />        
+        <PackageReference Include="Genocs.Metrics" Version="5.0.*" />
         <PackageReference Include="Genocs.Monitoring" Version="5.0.*" />
-        <PackageReference Include="Genocs.Logging" Version="5.0.*" />
     </ItemGroup>
 
     <ItemGroup>

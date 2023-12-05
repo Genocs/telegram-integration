@@ -2,6 +2,7 @@ using Genocs.Core.Builders;
 using Genocs.Core.Demo.Worker;
 using Genocs.Logging;
 using Genocs.Monitoring;
+using Genocs.Metrics.AppMetrics;
 using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Infrastructure.Extensions;
 using Serilog;
@@ -25,6 +26,7 @@ IHost host = Host.CreateDefaultBuilder(args)
 
         services
             .AddGenocs(hostContext.Configuration)
+            .AddMetrics()
             .AddMongoFast() // It adds the MongoDb Repository to the project and register all the Domain Objects with the standard interface
             .RegisterMongoRepositories(Assembly.GetExecutingAssembly()); // It registers the repositories that has been overridden. No need in case of standard repository
 

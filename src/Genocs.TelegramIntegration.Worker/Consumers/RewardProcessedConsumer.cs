@@ -14,10 +14,10 @@ public class RewardProcessedConsumer : IConsumer<RewardProcessed>
     private readonly IMongoDbRepository<LocalizedMessage> _localizedMessagesRepository;
 
     public RewardProcessedConsumer(
-                                    ILogger<RewardProcessedConsumer> logger,
-                                    ITelegramProxy telegramProxy,
-                                    IMongoDbRepository<UserChat> usersChatRepository,
-                                    IMongoDbRepository<LocalizedMessage> localizedMessagesRepository)
+                                   ILogger<RewardProcessedConsumer> logger,
+                                   ITelegramProxy telegramProxy,
+                                   IMongoDbRepository<UserChat> usersChatRepository,
+                                   IMongoDbRepository<LocalizedMessage> localizedMessagesRepository)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _telegramProxy = telegramProxy ?? throw new ArgumentNullException(nameof(telegramProxy));

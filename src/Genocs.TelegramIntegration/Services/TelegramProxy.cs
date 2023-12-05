@@ -292,7 +292,7 @@ public class TelegramProxy : ITelegramProxy
         // Check message text commands
         if (message.Message.Text.Trim().StartsWith("#"))
         {
-            await SendMessageAsync(message.Message.From.Id, "Thanks for request a suggestion. Unfortunately Fiscanner integration is a work in progress!");
+            await SendMessageAsync(message.Message.From.Id, "Thanks for request a suggestio. Unfortunately Fiscanner integration is a work in progress!");
             _logger.LogInformation($"ProcessMessageAsync received Message with suggestion: {message.UpdateId}");
             return;
         }

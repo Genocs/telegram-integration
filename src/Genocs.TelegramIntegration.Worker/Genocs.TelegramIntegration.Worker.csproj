@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <DockerTargetOS>Linux</DockerTargetOS>
-        <UserSecretsId>Genocs</UserSecretsId>
+        <UserSecretsId>_Genocs</UserSecretsId>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <DockerfileContext>..\..</DockerfileContext>
     </PropertyGroup>
@@ -12,6 +12,7 @@
         <PackageReference Include="Genocs.Core" Version="5.0.*" />
         <PackageReference Include="Genocs.Monitoring" Version="5.0.*" />
         <PackageReference Include="Genocs.Logging" Version="5.0.*" />
+        <PackageReference Include="Genocs.Metrics" Version="5.0.*" />
     </ItemGroup>
 
     <ItemGroup>

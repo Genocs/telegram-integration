@@ -27,7 +27,8 @@ public class WebHookController : ControllerBase
         string dataString = JsonSerializer.Serialize(message);
         Update? update = JsonSerializer.Deserialize<Update>(dataString);
 
-        await _telegramProxy.ProcessMessageAsync(update, dataString);
+        await _telegramProxy.LogMessageAsync(dataString);
+        await _telegramProxy.ProcessMessageAsync(update);
         return Accepted();
     }
 }

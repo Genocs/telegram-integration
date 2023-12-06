@@ -1,6 +1,4 @@
 ﻿using Genocs.Fiscanner.Contracts.Notifications;
-using Genocs.Persistence.MongoDb.Repositories;
-using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using MassTransit;
 
@@ -10,7 +8,6 @@ public class LangChainResponseConsumer : IConsumer<LangChainResponse>
 {
     private readonly ILogger<LangChainResponseConsumer> _logger;
     private readonly ITelegramProxy _telegramProxy;
-
 
     public LangChainResponseConsumer(
                                     ILogger<LangChainResponseConsumer> logger,

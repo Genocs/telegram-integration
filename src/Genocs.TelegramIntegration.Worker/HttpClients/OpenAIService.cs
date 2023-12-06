@@ -15,8 +15,6 @@ public class OpenAIService
     {
         if (openAIOptions == null) throw new ArgumentNullException(nameof(openAIOptions));
         if (openAIOptions.Value == null) throw new ArgumentNullException(nameof(openAIOptions.Value));
-        if (string.IsNullOrWhiteSpace(openAIOptions.Value.APIKey)) throw new ArgumentNullException("APIKey cannot be null");
-        if (string.IsNullOrWhiteSpace(openAIOptions.Value.Url)) throw new ArgumentNullException("Url cannot be null");
 
         _httpClient = httpClient;
 
@@ -36,6 +34,5 @@ public class OpenAIService
             MediaTypeNames.Application.Json);
 
         return await _httpClient.PostAsync("v1/completions", json);
-
     }
 }

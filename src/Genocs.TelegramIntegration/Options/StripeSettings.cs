@@ -1,7 +1,11 @@
-﻿namespace Genocs.TelegramIntegration.Options;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Genocs.TelegramIntegration.Options;
 
 public class StripeSettings
 {
     public static string Position = "Stripe";
-    public string Token { get; set; } = default!;
+
+    [Required(AllowEmptyStrings = false, ErrorMessage = "Stripe Token cannot be null or empty")]
+    public string? Token { get; set; }
 }

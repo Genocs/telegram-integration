@@ -1,7 +1,11 @@
-﻿namespace Genocs.TelegramIntegration.Options;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Genocs.TelegramIntegration.Options;
 
 public class TelegramSettings
 {
     public static string Position = "Telegram";
-    public string Token { get; set; } = default!;
+
+    [Required(AllowEmptyStrings = false, ErrorMessage = "Telegram Token cannot be null or empty")]
+    public string? Token { get; set; }
 }

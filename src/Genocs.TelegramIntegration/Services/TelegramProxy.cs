@@ -47,25 +47,22 @@ public class TelegramProxy : ITelegramProxy
     {
         if (telegramOptions == null) throw new ArgumentNullException(nameof(telegramOptions));
         if (telegramOptions.Value == null) throw new ArgumentNullException(nameof(telegramOptions.Value));
-        if (string.IsNullOrWhiteSpace(telegramOptions.Value.Token)) throw new ArgumentNullException("Token cannot be null");
+
         _telegramOptions = telegramOptions.Value;
 
         if (openAIOptions == null) throw new ArgumentNullException(nameof(openAIOptions));
         if (openAIOptions.Value == null) throw new ArgumentNullException(nameof(openAIOptions.Value));
-        if (string.IsNullOrWhiteSpace(openAIOptions.Value.APIKey)) throw new ArgumentNullException("APIKey cannot be null");
-        if (string.IsNullOrWhiteSpace(openAIOptions.Value.Url)) throw new ArgumentNullException("Url cannot be null");
 
         _openAIOptions = openAIOptions.Value;
 
         if (apiClientOptions == null) throw new ArgumentNullException(nameof(apiClientOptions));
         if (apiClientOptions.Value == null) throw new ArgumentNullException(nameof(apiClientOptions.Value));
-        if (string.IsNullOrWhiteSpace(apiClientOptions.Value.FormRecognizerUrl)) throw new ArgumentNullException("FormRecognizerUrl cannot be null");
 
         _apiClientOptions = apiClientOptions.Value;
 
         if (stripeOptions == null) throw new ArgumentNullException(nameof(stripeOptions));
         if (stripeOptions.Value == null) throw new ArgumentNullException(nameof(stripeOptions.Value));
-        if (string.IsNullOrWhiteSpace(stripeOptions.Value.Token)) throw new ArgumentNullException("Token cannot be null");
+
         _stripeOptions = stripeOptions.Value;
 
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -220,7 +217,7 @@ public class TelegramProxy : ITelegramProxy
         return null;
     }
 
-    public async Task ProcessMessageAsync(Update? message, string? rawData)
+    public async Task ProcessMessageAsync(Update? message)
     {
         if (message is null)
         {
@@ -257,9 +254,6 @@ public class TelegramProxy : ITelegramProxy
             return;
         }
 
-        GenocsChat chatMessage = new GenocsChat { UpdateId = message.UpdateId, Message = rawData };
-        await _mongoDbRepository.InsertAsync(chatMessage);
-
         // Check language
         // message.Message.From.LanguageCode
 
@@ -292,7 +286,7 @@ public class TelegramProxy : ITelegramProxy
         // Check message text commands
         if (message.Message.Text.Trim().StartsWith("#"))
         {
-            await SendMessageAsync(message.Message.From.Id, "Thanks for request a suggestio. Unfortunately Fiscanner integration is a work in progress!");
+            await SendMessageAsync(message.Message.From.Id, "Thanks for request a suggestion. Unfortunately Fiscanner integration is a work in progress!");
             _logger.LogInformation($"ProcessMessageAsync received Message with suggestion: {message.UpdateId}");
             return;
         }
@@ -378,6 +372,7 @@ public class TelegramProxy : ITelegramProxy
         {
             if (string.IsNullOrWhiteSpace(fileId))
             {
+                _logger.LogWarning("CallCognitiveServicesAsync: fileId is null or empty");
                 return null;
             }
 
@@ -386,16 +381,11 @@ public class TelegramProxy : ITelegramProxy
             var botFile = await botClient.GetFileAsync(fileId);
             if (botFile is null)
             {
+                _logger.LogWarning($"CallCognitiveServicesAsync: botFile is null. fileId: '{fileId}'");
                 return null;
             }
 
             string urlResource = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{botFile.FilePath}";
-
-            if (string.IsNullOrEmpty(urlResource))
-            {
-                return null;
-            }
-
             result.ResourceUrl = HttpUtility.HtmlDecode(urlResource);
 
             var classification = await _formClassifierService.ClassifyAsync(result.ResourceUrl);
@@ -419,16 +409,19 @@ public class TelegramProxy : ITelegramProxy
     {
         if (formExtractorResponse == null)
         {
+            _logger.LogWarning("ProcessFormResponseAsync: formExtractorResponse is null");
             return null;
         }
 
         if (formExtractorResponse.ContentData == null)
         {
+            _logger.LogWarning("ProcessFormResponseAsync: formExtractorResponse.ContentData is null");
             return null;
         }
 
         if (formExtractorResponse.ContentData.Count <= 0)
         {
+            _logger.LogWarning("ProcessFormResponseAsync: formExtractorResponse.ContentData.Count <= 0");
             return null;
         }
 
@@ -439,18 +432,28 @@ public class TelegramProxy : ITelegramProxy
 
         if (dictionaryData is null)
         {
+            _logger.LogWarning("ProcessFormResponseAsync: dictionaryData is null");
             return null;
         }
 
         if (!dictionaryData.ContainsKey("RefundAmount"))
         {
+            _logger.LogWarning("ProcessFormResponseAsync: dictionaryData doesn't contain RefundAmount");
             return null;
         }
 
         FormRecord? refund = JsonSerializer.Deserialize<FormRecord>(JsonSerializer.Serialize(dictionaryData["RefundAmount"]));
 
+        if (refund is null)
+        {
+            _logger.LogWarning("ProcessFormResponseAsync: refund is null");
+            return null;
+        }
+
         // Use Telegram BOT client to send the voucher barcode image
         BotClient botClient = new BotClient(_telegramOptions.Token);
+
+        // Use Prompt engineering to setup response to the user
 
         await botClient.SendMessageAsync(chatId, $"Hello {user}, we received a TTF with the amount of {refund?.Value} EUR!");
 

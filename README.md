@@ -90,14 +90,14 @@ dotnet run --project .\src\Genocs.TelegramIntegration.Worker
 
 # ** DOCKER ** #
 # Build docker image
-docker build -f webapi.dockerfile -t genocs/telegram_integration-webapi:3.0.0 -t genocs/telegram_integration-webapi:latest .
-docker build -f worker.dockerfile -t genocs/telegram_integration-worker:3.0.0 -t genocs/telegram_integration-worker:latest .
+docker build -f webapi.dockerfile -t genocs/telegram_integration-webapi:3.0.1 -t genocs/telegram_integration-webapi:latest .
+docker build -f worker.dockerfile -t genocs/telegram_integration-worker:3.0.1 -t genocs/telegram_integration-worker:latest .
 
 # Push image on dockerhub
-docker push genocs/telegram_integration-webapi:3.0.0
+docker push genocs/telegram_integration-webapi:3.0.1
 docker push genocs/telegram_integration-webapi:latest
 
-docker push genocs/telegram_integration-worker:3.0.0
+docker push genocs/telegram_integration-worker:3.0.1
 docker push genocs/telegram_integration-worker:latest
 
 # Run with docker compose

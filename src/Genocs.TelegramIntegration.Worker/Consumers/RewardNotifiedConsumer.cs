@@ -27,15 +27,20 @@ public class RewardNotifiedConsumer : IConsumer<RewardNotified>
 
     public async Task Consume(ConsumeContext<RewardNotified> context)
     {
-        _logger.LogInformation("Received RewardNotified");
+        _logger.LogDebug("Received RewardNotified");
 
         var user = await _usersChatRepository.FirstOrDefaultAsync(c => c.MemberId == context.Message.MemberId);
 
-        if (user is null) return;
+        if (user is null)
+        {
+            _logger.LogInformation($"Received RewardNotified. User chat is null for memberId: '{context.Message.MemberId}'");
+            return;
+        }
 
         var localizedMessage = await _localizedMessagesRepository.FirstOrDefaultAsync(c => c.LanguageId == context.Message.Language
                                                                                         && c.NotificationTag == context.Message.NotificationTag);
 
+        // Use ChatGPT3 to generate the message
         if (localizedMessage is null) return;
 
         switch (context.Message.NotificationTag)

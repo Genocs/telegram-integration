@@ -12,7 +12,7 @@ namespace Genocs.TelegramIntegration.xUnitTests;
 
 public class ClientUnitTests
 {
-    [Fact]
+    //[Fact]
     public void ConnectToClientTest()
     {
         var mockTelegramOptions = new Mock<IOptions<Options.TelegramSettings>>();

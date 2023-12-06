@@ -31,16 +31,23 @@ public class RewardProcessedConsumer : IConsumer<RewardProcessed>
 
         var user = await _usersChatRepository.FirstOrDefaultAsync(c => c.MemberId == context.Message.MemberId);
 
-        if (user is null) return;
+        if (user is null)
+        {
+            _logger.LogInformation($"Received RewardProcessed. User chat is null for memberId: '{context.Message.MemberId}'");
+            return;
+        }
 
         var localizedMessage = await _localizedMessagesRepository.FirstOrDefaultAsync(c => c.LanguageId == context.Message.Language
                                                                                         && c.NotificationTag == context.Message.NotificationTag);
 
+        // Use ChatGPT3 to generate the message
         if (localizedMessage is null) return;
 
-        await _telegramProxy.SendMessageAsync(user.ChatId,
-                                        string.Format(localizedMessage.Message,
-                                                        context.Message.Metadata["amount"],
-                                                        context.Message.Metadata["reward_amount"]));
+        await _telegramProxy.SendMessageAsync(
+                                              user.ChatId,
+                                              string.Format(
+                                                            localizedMessage.Message,
+                                                            context.Message.Metadata["amount"],
+                                                            context.Message.Metadata["reward_amount"]));
     }
 }

@@ -5,7 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Genocs.Integration.CognitiveServices" Version="4.0.0-rc3.1" />
+        <PackageReference Include="Genocs.Integration.CognitiveServices" Version="5.0.0" />
         <PackageReference Include="Genocs.Persistence.MongoDb" Version="5.0.*" />
         <PackageReference Include="Genocs.Core" Version="5.0.*" />
     </ItemGroup>

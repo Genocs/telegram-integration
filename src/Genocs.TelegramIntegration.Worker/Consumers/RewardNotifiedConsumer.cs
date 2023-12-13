@@ -37,7 +37,7 @@ public class RewardNotifiedConsumer : IConsumer<RewardNotified>
             return;
         }
 
-        var localizedMessage = await _localizedMessagesRepository.FirstOrDefaultAsync(c => c.LanguageId == context.Message.Language
+        var localizedMessage = await _localizedMessagesRepository.FirstOrDefaultAsync(c => c.LanguageId == user.Language
                                                                                         && c.NotificationTag == context.Message.NotificationTag);
 
         // Use ChatGPT3 to generate the message

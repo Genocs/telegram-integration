@@ -10,7 +10,7 @@
 
     <ItemGroup>
         <PackageReference Include="Genocs.Core" Version="5.0.*" />
-        <PackageReference Include="Genocs.Monitoring" Version="5.0.*" />
+        <PackageReference Include="Genocs.Tracing" Version="5.0.*" />
         <PackageReference Include="Genocs.Logging" Version="5.0.*" />
         <PackageReference Include="Genocs.Metrics" Version="5.0.*" />
     </ItemGroup>
@@ -18,7 +18,6 @@
     <ItemGroup>
         <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="4.0.0" />
         <PackageReference Include="MassTransit.Extensions.DependencyInjection" Version="7.3.1" />
-        <PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0" />
         <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
     </ItemGroup>
 

@@ -3,6 +3,7 @@ using Genocs.Persistence.MongoDb.Repositories;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
+using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -47,8 +48,9 @@ public class ClientUnitTests
         var mockFormRecognizer = new Mock<IFormRecognizer>();
         var mockImageClassifier = new Mock<IImageClassifier>();
         var mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        var mockPublishEndpoint = new Mock<IPublishEndpoint>();
 
-        var mockMongoDbRepositoryGenocsChat = new Mock<IMongoDbRepository<GenocsChat>>();
+        var mockChatUpdateRepository = new Mock<IMongoDbRepository<ChatUpdate>>();
 
         ITelegramProxy proxy = new TelegramProxy(
                                                  mockTelegramOptions.Object,
@@ -57,10 +59,11 @@ public class ClientUnitTests
                                                  mockApiClientOptions.Object,
                                                  mockStripeOptions.Object,
                                                  mockHttpClientFactory.Object,
-                                                 mockMongoDbRepositoryGenocsChat.Object,
+                                                 mockChatUpdateRepository.Object,
                                                  mockFormRecognizer.Object,
                                                  mockImageClassifier.Object,
-                                                 mockDistributedCache.Object);
+                                                 mockDistributedCache.Object,
+                                                 mockPublishEndpoint.Object);
         proxy.PullUpdatesAsync();
 
     }

@@ -74,7 +74,7 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The configuration.</param>
     /// <returns>The service collection you can use to create chain.</returns>
-    public static IServiceCollection AddCustomServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.Position));
         services.Configure<OpenAISettings>(configuration.GetSection(OpenAISettings.Position));
@@ -89,7 +89,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IFormRecognizer, FormRecognizerService>();
         services.TryAddSingleton<IImageClassifier, ImageClassifierService>();
 
-        services.TryAddSingleton<ITelegramProxy, TelegramProxy>();
+        services.TryAddScoped<ITelegramProxy, TelegramProxy>();
 
         return services;
     }

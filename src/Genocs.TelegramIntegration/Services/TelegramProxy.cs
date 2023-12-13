@@ -1,14 +1,16 @@
-﻿using Genocs.Integration.CognitiveServices.Contracts;
+﻿using Genocs.Integration.CognitiveServices.IntegrationEvents;
 using Genocs.Integration.CognitiveServices.Interfaces;
 using Genocs.Persistence.MongoDb.Repositories;
 using Genocs.TelegramIntegration.Contracts.Models;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services.Interfaces;
+using MassTransit;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -24,7 +26,7 @@ public class TelegramProxy : ITelegramProxy
 {
     private readonly ILogger<TelegramProxy> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IMongoDbRepository<GenocsChat> _mongoDbRepository;
+    private readonly IMongoDbRepository<ChatUpdate> _chatUpdateRepository;
     private readonly TelegramSettings _telegramOptions;
     private readonly OpenAISettings _openAIOptions;
     private readonly ApiClientSettings _apiClientOptions;
@@ -32,6 +34,7 @@ public class TelegramProxy : ITelegramProxy
     private readonly IFormRecognizer _formRecognizerService;
     private readonly IImageClassifier _formClassifierService;
     private readonly IDistributedCache _distributedCache;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public TelegramProxy(
                          IOptions<TelegramSettings> telegramOptions,
@@ -40,10 +43,11 @@ public class TelegramProxy : ITelegramProxy
                          IOptions<ApiClientSettings> apiClientOptions,
                          IOptions<StripeSettings> stripeOptions,
                          IHttpClientFactory httpClientFactory,
-                         IMongoDbRepository<GenocsChat> mongoDbRepository,
+                         IMongoDbRepository<ChatUpdate> chatUpdateRepository,
                          IFormRecognizer formRecognizerService,
                          IImageClassifier formClassifierService,
-                         IDistributedCache distributedCache)
+                         IDistributedCache distributedCache,
+                         IPublishEndpoint publishEndpoint)
     {
         if (telegramOptions == null) throw new ArgumentNullException(nameof(telegramOptions));
         if (telegramOptions.Value == null) throw new ArgumentNullException(nameof(telegramOptions.Value));
@@ -67,11 +71,13 @@ public class TelegramProxy : ITelegramProxy
 
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-        _mongoDbRepository = mongoDbRepository ?? throw new ArgumentNullException(nameof(mongoDbRepository));
+
+        _chatUpdateRepository = chatUpdateRepository ?? throw new ArgumentNullException(nameof(chatUpdateRepository));
 
         _formRecognizerService = formRecognizerService ?? throw new ArgumentNullException(nameof(formRecognizerService));
         _formClassifierService = formClassifierService ?? throw new ArgumentNullException(nameof(formClassifierService));
         _distributedCache = distributedCache ?? throw new ArgumentNullException(nameof(distributedCache));
+        _publishEndpoint = publishEndpoint ?? throw new ArgumentNullException(nameof(publishEndpoint));
     }
 
     /// <summary>
@@ -81,114 +87,107 @@ public class TelegramProxy : ITelegramProxy
     {
         // You need a BotClient instance if you want access to the Bot API methods.
 
-        BotClient botClient = new BotClient(_telegramOptions.Token);
+        BotClient botClient = new BotClient(_telegramOptions.Token!);
 
         var updates = botClient.GetUpdates();
 
-        if (updates?.Any() == true)
+        if (updates is null || !updates.Any())
         {
-            // Check Texts
-            var textToUpdates = updates.Where(c => c.Message != null && !string.IsNullOrWhiteSpace(c.Message.Text));
+            // No updates. Log and exit
+            _logger.LogInformation("PullUpdatesAsync: No updates received");
+            return;
+        }
 
-            if (textToUpdates != null && textToUpdates.Any())
+        // Process the updates received by context
+        // Evaluate to use a queue to process the updates
+        // or an actor pattern to process the updates
+
+        // Check Texts
+        var textToUpdates = updates.Where(c => c.Message != null && !string.IsNullOrWhiteSpace(c.Message.Text));
+
+        if (textToUpdates != null && textToUpdates.Any())
+        {
+            foreach (var update in textToUpdates)
             {
-                foreach (var update in textToUpdates)
+                var exist = await _chatUpdateRepository.FirstOrDefaultAsync(c => c.Message.UpdateId == update.UpdateId);
+
+                if (exist is null)
                 {
-                    var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == update.UpdateId);
+                    var response = await CallGPTAsync(new OpenAIRequest { Prompt = update.Message.Text });
 
-                    if (exist is null)
+                    if (response != null && response.Choices?.Any() == true)
                     {
-                        GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
-                        await _mongoDbRepository.InsertAsync(genocsChat);
-
-                        var response = await CallGPTAsync(new OpenAIRequest { Prompt = update.Message.Text });
-
-                        if (response != null && response.Choices?.Any() == true)
+                        var choice = response.Choices.FirstOrDefault();
+                        if (choice != null)
                         {
-                            var choice = response.Choices.FirstOrDefault();
-                            if (choice != null)
-                            {
-                                var res = botClient.SendMessage(update.Message.Chat.Id, choice.Text);
-                            }
+                            var res = botClient.SendMessage(update.Message.Chat.Id, choice.Text);
                         }
                     }
                 }
             }
+        }
 
-            // Check Documents
-            var documentToUpdates = updates.Where(c => c.Message != null && c.Message.Document != null);
-            if (documentToUpdates != null && documentToUpdates.Any())
+        // Check Documents
+        var documentToUpdates = updates.Where(c => c.Message != null && c.Message.Document != null);
+        if (documentToUpdates != null && documentToUpdates.Any())
+        {
+            foreach (var update in documentToUpdates)
             {
-                foreach (var update in documentToUpdates)
+                if (string.IsNullOrEmpty(update.Message?.Caption))
                 {
-                    var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == update.UpdateId);
-                    if (exist is null)
-                    {
-                        GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
-                        await _mongoDbRepository.InsertAsync(genocsChat);
+                    var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
+                    continue;
+                }
 
-                        if (string.IsNullOrEmpty(update.Message?.Caption))
-                        {
-                            var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
-                            continue;
-                        }
+                if (!string.IsNullOrEmpty(update.Message.Caption) && update.Message.Caption.ToLower().Contains("tff"))
+                {
+                    var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
+                    continue;
+                }
 
-                        if (!string.IsNullOrEmpty(update.Message.Caption) && update.Message.Caption.ToLower().Contains("tff"))
-                        {
-                            var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
-                            continue;
-                        }
-
-                        // Cognitive services integration here
-                        await CallCognitiveServicesAsync("");
-                    }
+                // Cognitive services integration here
+                string? fileId = update?.Message?.Photo?.OrderByDescending(c => c.FileSize).First().FileId;
+                if (!string.IsNullOrEmpty(fileId))
+                {
+                    await ExtractSemanticDataAsync(fileId);
                 }
             }
+        }
 
-            // Check Images
-            var photoToUpdates = updates.Where(c => c.Message != null && c.Message.Photo != null);
-            if (photoToUpdates != null && photoToUpdates.Any())
+        // Check Images
+        var photoToUpdates = updates.Where(c => c.Message != null && c.Message.Photo != null);
+        if (photoToUpdates != null && photoToUpdates.Any())
+        {
+            foreach (var update in photoToUpdates)
             {
-                foreach (var update in photoToUpdates)
+                if (string.IsNullOrEmpty(update.Message?.Caption))
                 {
-                    var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == update.UpdateId);
-                    if (exist is null)
-                    {
-                        GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
-                        await _mongoDbRepository.InsertAsync(genocsChat);
+                    var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
+                    continue;
+                }
 
-                        if (string.IsNullOrEmpty(update.Message?.Caption))
-                        {
-                            var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
-                            continue;
-                        }
+                if (!string.IsNullOrEmpty(update.Message?.Caption) && update.Message.Caption.ToLower().Contains("tff"))
+                {
+                    var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
+                    continue;
+                }
 
-                        if (!string.IsNullOrEmpty(update.Message?.Caption) && update.Message.Caption.ToLower().Contains("tff"))
-                        {
-                            var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
-                            continue;
-                        }
-
-                        await CallCognitiveServicesAsync("");
-                    }
+                // Cognitive services integration here
+                string? fileId = update?.Message?.Photo?.OrderByDescending(c => c.FileSize).First().FileId;
+                if (!string.IsNullOrEmpty(fileId))
+                {
+                    await ExtractSemanticDataAsync(fileId);
                 }
             }
+        }
 
-            // Check Invoice
-            var invoiceToUpdates = updates.Where(c => c.PreCheckoutQuery != null);
-            if (invoiceToUpdates != null && invoiceToUpdates.Any())
+        // Check Invoice
+        var invoiceToUpdates = updates.Where(c => c.PreCheckoutQuery != null);
+        if (invoiceToUpdates != null && invoiceToUpdates.Any())
+        {
+            foreach (var update in invoiceToUpdates)
             {
-                foreach (var update in invoiceToUpdates)
-                {
-                    var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == update.UpdateId);
-                    if (exist is null)
-                    {
-                        GenocsChat genocsChat = new GenocsChat { UpdateId = update.UpdateId };
-                        await _mongoDbRepository.InsertAsync(genocsChat);
-
-                        botClient.AnswerPreCheckoutQuery(update.PreCheckoutQuery.Id, true);
-                    }
-                }
+                botClient.AnswerPreCheckoutQuery(update.PreCheckoutQuery.Id, true);
             }
         }
     }
@@ -217,6 +216,13 @@ public class TelegramProxy : ITelegramProxy
         return null;
     }
 
+    /// <summary>
+    /// Process a message from Telegram.
+    /// This function is called by the webhook.
+    /// Pay attention: the order how the kind of messages are processed matters.
+    /// </summary>
+    /// <param name="message">The message received by the webhook.</param>
+    /// <returns>async task.</returns>
     public async Task ProcessMessageAsync(Update? message)
     {
         if (message is null)
@@ -225,32 +231,39 @@ public class TelegramProxy : ITelegramProxy
             return;
         }
 
+        var messageToProcess = await _chatUpdateRepository.FirstOrDefaultAsync(c => c.Message.UpdateId == message.UpdateId);
+
+        if (messageToProcess is null)
+        {
+            messageToProcess = new ChatUpdate(message);
+            await _chatUpdateRepository.InsertAsync(messageToProcess);
+        }
+        else
+        {
+            if (messageToProcess.Processed)
+            {
+                _logger.LogError($"ProcessMessageAsync: received duplicated UpdateId: {message.UpdateId}");
+                return;
+            }
+        }
+
+        // Make payment unique
         // Payment
         if (message.PreCheckoutQuery != null)
         {
-            BotClient botClient = new BotClient(_telegramOptions.Token);
+            BotClient botClient = new BotClient(_telegramOptions.Token!);
             botClient.AnswerPreCheckoutQuery(message.PreCheckoutQuery.Id, true);
 
-            // Check if qr code needs to be generated
+            // Notify to the platform the payment is completed
+            // Remember the process is handled by the Stripe. So you can find the payment into the Stripe dashboard
+            // You can use the Stripe API to check the payment status or you can use the Stripe webhook to receive the payment status.
+
             // Send qr code
             var res = await botClient.SendPhotoAsync(
                                          chatId: message.PreCheckoutQuery.From.Id,
                                          photo: $"https://qrcode.tec-it.com/API/QRCode?data={message.PreCheckoutQuery.Id}",
                                          caption: $"This is Your Voucher, please use it during the checkout. It will expire on: {DateTime.UtcNow.AddDays(10).ToLongDateString()}!");
-            return;
-        }
 
-        if (message.Message is null)
-        {
-            _logger.LogError("ProcessMessageAsync: Update message.Message is null");
-            return;
-        }
-
-        var exist = await _mongoDbRepository.FirstOrDefaultAsync(c => c.UpdateId == message.UpdateId);
-
-        if (exist is not null)
-        {
-            _logger.LogError($"ProcessMessageAsync: received duplicated UpdateId: {message.UpdateId}");
             return;
         }
 
@@ -260,11 +273,21 @@ public class TelegramProxy : ITelegramProxy
         // Image
         if (message.Message.Photo != null)
         {
+            // Use Semantic kernel to process the message
             await SendMessageAsync(message.Message.Chat.Id, $"Hello {message.Message.Chat.FirstName}, I got your image and I'm going to process it!");
 
-            // Cognitive services integration here
-            var formRecognizerResponse = await CallCognitiveServicesAsync(message.Message.Photo.OrderByDescending(c => c.FileSize).First().FileId);
-            string? processFormResponse = await ProcessFormResponseAsync(formRecognizerResponse, message.Message.Chat.Id, message.Message.Chat.FirstName);
+            // Use the file Id to extract Semantic Data
+            string fileId = message.Message.Photo.OrderByDescending(c => c.FileSize).First().FileId;
+
+            var formRecognizerResponse = await CallFormRecognizerAsync(fileId);
+
+            // var formRecognizerResponse = await ExtractSemanticDataAsync(fileId);
+
+            string? processFormResponse = await ProcessFormResponseAsync(
+                                                                         formRecognizerResponse,
+                                                                         message.Message.Chat.Id,
+                                                                         message.Message.Chat.FirstName);
+
             await Checkout(message.Message.Chat.Id, processFormResponse);
             return;
         }
@@ -291,7 +314,7 @@ public class TelegramProxy : ITelegramProxy
             return;
         }
 
-        // Generic test call GPT3
+        // Generic test call OpenAI with chat competition model
         var response = await CallGPTAsync(new OpenAIRequest { Prompt = message.Message.Text });
 
         if (response != null && response.Choices != null && response.Choices.Any())
@@ -302,28 +325,34 @@ public class TelegramProxy : ITelegramProxy
                 await SendMessageAsync(message.Message.From.Id, choice.Text);
             }
         }
+
+        messageToProcess.Processed = true;
+        await _chatUpdateRepository.UpdateAsync(messageToProcess);
     }
 
-    public async Task SendMessageAsync(long recipient, string? message)
+    /// <summary>
+    /// Proxy to send a message to a recipient.
+    /// </summary>
+    /// <param name="recipient">The Recipient as chatId.</param>
+    /// <param name="message">Payload with the message.</param>
+    /// <returns>The async task.</returns>
+    public async Task<Telegram.BotAPI.AvailableTypes.Message?> SendMessageAsync(long recipient, string? message)
     {
-        if (!string.IsNullOrWhiteSpace(message))
+        if (string.IsNullOrWhiteSpace(message))
         {
-            BotClient botClient = new BotClient(_telegramOptions.Token);
-            var res = await botClient.SendMessageAsync(recipient, message);
+            _logger.LogError("SendMessageAsync: message is null or empty");
+            return null;
         }
+
+        BotClient botClient = new BotClient(_telegramOptions.Token!);
+        return await botClient.SendMessageAsync(recipient, message);
     }
 
-    public async Task LogMessageAsync(string? message)
-    {
-        GenocsChat chatMessage = new GenocsChat { Message = message };
-        await _mongoDbRepository.InsertAsync(chatMessage);
-    }
-
-    private async Task<OpenAIResponse?> CallFormRecognizerAsync(string fileId)
+    private async Task<FormDataExtractionCompleted?> CallFormRecognizerAsync(string fileId)
     {
         try
         {
-            BotClient botClient = new BotClient(_telegramOptions.Token);
+            BotClient botClient = new BotClient(_telegramOptions.Token!);
 
             var botFile = await botClient.GetFileAsync(fileId);
             if (botFile is null)
@@ -353,7 +382,7 @@ public class TelegramProxy : ITelegramProxy
             if (httpResponseMessage.IsSuccessStatusCode)
             {
                 using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
-                return await JsonSerializer.DeserializeAsync<OpenAIResponse>(contentStream);
+                return await JsonSerializer.DeserializeAsync<FormDataExtractionCompleted?>(contentStream, options: new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
         }
         catch (Exception ex)
@@ -364,9 +393,9 @@ public class TelegramProxy : ITelegramProxy
         return null;
     }
 
-    private async Task<FormExtractorResponse?> CallCognitiveServicesAsync(string fileId)
+    private async Task<FormDataExtractionCompleted?> ExtractSemanticDataAsync(string fileId)
     {
-        FormExtractorResponse result = new FormExtractorResponse();
+        FormDataExtractionCompleted result = new FormDataExtractionCompleted();
 
         try
         {
@@ -376,7 +405,7 @@ public class TelegramProxy : ITelegramProxy
                 return null;
             }
 
-            BotClient botClient = new BotClient(_telegramOptions.Token);
+            BotClient botClient = new BotClient(_telegramOptions.Token!);
 
             var botFile = await botClient.GetFileAsync(fileId);
             if (botFile is null)
@@ -388,14 +417,27 @@ public class TelegramProxy : ITelegramProxy
             string urlResource = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{botFile.FilePath}";
             result.ResourceUrl = HttpUtility.HtmlDecode(urlResource);
 
+            // Classify the image to identify the document issuer
             var classification = await _formClassifierService.ClassifyAsync(result.ResourceUrl);
 
-            if (classification != null && classification.Predictions != null && classification.Predictions.Any())
+            if (classification is null)
             {
-                var firstPrediction = classification.Predictions.OrderByDescending(o => o.Probability).First();
-                await _distributedCache.SetAsync("d1fdb12d-c360-4e80-a7e8-75ff63971f0c", Encoding.UTF8.GetBytes("5d3c9567-c874-4bfa-95a1-35588c81be91"));
-                result.ContentData = await _formRecognizerService.ScanAsync(firstPrediction.TagId!, urlResource);
+                _logger.LogWarning($"CallCognitiveServicesAsync: classification is null. ResourceUrl: '{result.ResourceUrl}'");
+                return null;
             }
+
+            if (classification.Predictions is null || classification.Predictions.Count == 0)
+            {
+                _logger.LogWarning($"CallCognitiveServicesAsync: classification is empty. ResourceUrl: '{result.ResourceUrl}'");
+                return null;
+            }
+
+            var firstPrediction = classification.Predictions.OrderByDescending(o => o.Probability).First();
+
+            // This is a workaround to setup distributed cache
+            await _distributedCache.SetAsync("d1fdb12d-c360-4e80-a7e8-75ff63971f0c", Encoding.UTF8.GetBytes("5d3c9567-c874-4bfa-95a1-35588c81be91"));
+
+            result.ContentData = await _formRecognizerService.ScanAsync(firstPrediction.TagId!, result.ResourceUrl);
         }
         catch (Exception ex)
         {
@@ -405,7 +447,7 @@ public class TelegramProxy : ITelegramProxy
         return result;
     }
 
-    private async Task<string?> ProcessFormResponseAsync(FormExtractorResponse? formExtractorResponse, long chatId, string? user)
+    private async Task<string?> ProcessFormResponseAsync(FormDataExtractionCompleted? formExtractorResponse, long chatId, string? user)
     {
         if (formExtractorResponse == null)
         {
@@ -427,8 +469,8 @@ public class TelegramProxy : ITelegramProxy
 
         // Read from list of dynamic data contained into ContentData
         // Check the RefundAmount field inside the ContentData
-
-        IDictionary<string, object?> dictionaryData = (System.Dynamic.ExpandoObject)formExtractorResponse.ContentData[0];
+        JsonElement dictionaryElement = (JsonElement)formExtractorResponse.ContentData[0];
+        IDictionary<string, FormRecord?>? dictionaryData = dictionaryElement.Deserialize<IDictionary<string, FormRecord?>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         if (dictionaryData is null)
         {
@@ -450,8 +492,14 @@ public class TelegramProxy : ITelegramProxy
             return null;
         }
 
+        // Save the document on the database for future reference
+
+        /*
+         *  MOVE OUTSIDE
+         */
+
         // Use Telegram BOT client to send the voucher barcode image
-        BotClient botClient = new BotClient(_telegramOptions.Token);
+        BotClient botClient = new BotClient(_telegramOptions.Token!);
 
         // Use Prompt engineering to setup response to the user
 
@@ -464,17 +512,21 @@ public class TelegramProxy : ITelegramProxy
 
     private async Task Checkout(long chatId, string? amount)
     {
-        if (decimal.TryParse(amount, out decimal value))
+        // Convert Italian with decimal separator number to decimal
+
+        IFormatProvider culture = new CultureInfo("it-IT", true);
+
+        if (decimal.TryParse(amount, culture, out decimal value))
         {
-            // Use Telegram BOT client to send the voucher barcode image
-            BotClient botClient = new BotClient(_telegramOptions.Token);
+            // Use Telegram BOT client to send start the payment checkout
+            BotClient botClient = new BotClient(_telegramOptions.Token!);
 
             SendInvoiceArgs sendInvoiceArgs = new SendInvoiceArgs(
                                                                   chatId: chatId,
                                                                   title: "Genocs Voucher",
                                                                   description: $"Voucher of 10 times {amount} EUR!",
                                                                   payload: "GenocsVoucher",
-                                                                  providerToken: _stripeOptions.Token,
+                                                                  providerToken: _stripeOptions.Token!,
                                                                   currency: "EUR",
                                                                   prices: new List<LabeledPrice>
                                                                   {

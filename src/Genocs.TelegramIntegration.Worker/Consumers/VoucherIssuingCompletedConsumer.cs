@@ -1,20 +1,22 @@
 ﻿using Genocs.Fiscanner.Contracts.Promotions;
 using Genocs.Persistence.MongoDb.Repositories;
 using Genocs.TelegramIntegration.Domains;
+using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using MassTransit;
+using Telegram.BotAPI;
 
 namespace Genocs.TelegramIntegration.Worker.Consumers;
 
-public class VoucherIssuingRequestedConsumer : IConsumer<VoucherIssuingRequested>
+public class VoucherIssuingCompletedConsumer : IConsumer<VoucherIssuingCompleted>
 {
-    private readonly ILogger<VoucherIssuingRequestedConsumer> _logger;
+    private readonly ILogger<VoucherIssuingCompletedConsumer> _logger;
     private readonly ITelegramProxy _telegramProxy;
     private readonly IMongoDbRepository<UserChat> _usersChatRepository;
     private readonly IMongoDbRepository<LocalizedMessage> _localizedMessagesRepository;
 
-    public VoucherIssuingRequestedConsumer(
-                                            ILogger<VoucherIssuingRequestedConsumer> logger,
+    public VoucherIssuingCompletedConsumer(
+                                            ILogger<VoucherIssuingCompletedConsumer> logger,
                                             ITelegramProxy telegramProxy,
                                             IMongoDbRepository<UserChat> usersChatRepository,
                                             IMongoDbRepository<LocalizedMessage> localizedMessagesRepository)
@@ -25,23 +27,15 @@ public class VoucherIssuingRequestedConsumer : IConsumer<VoucherIssuingRequested
         _localizedMessagesRepository = localizedMessagesRepository ?? throw new ArgumentNullException(nameof(localizedMessagesRepository));
     }
 
-    public async Task Consume(ConsumeContext<VoucherIssuingRequested> context)
+    public async Task Consume(ConsumeContext<VoucherIssuingCompleted> context)
     {
-        _logger.LogDebug("Received VoucherIssuingRequested");
-
-        UserChat chat = await _usersChatRepository.FirstOrDefaultAsync(x => x.MemberId == context.Message.MemberId);
-
-        // Notify and
-        await _telegramProxy.SendMessageAsync(chat.ChatId, "VoucherIssuingRequested");
-
-        // Check the amount of vouchers issued for the user
-
-        if (context.Message.Cost > 0)
+        if (long.TryParse(context.Message.ReferenceId, out long recipient))
         {
-            // Send notification to complete checkout about the cost of the voucher
-            await _telegramProxy.CheckoutAsync(chat.ChatId, "VoucherIssuingRequestedCost");
+            await _telegramProxy.SendMessageAsync(recipient, "VoucherIssuingCompleted");
         }
-
-        await Task.CompletedTask;
+        else
+        {
+            _logger.LogError("VoucherIssuingCompleted got an error. Received {recipient},", context.Message.ReferenceId);
+        }
     }
 }

@@ -33,7 +33,7 @@ public class RewardNotifiedConsumer : IConsumer<RewardNotified>
 
         if (user is null)
         {
-            _logger.LogInformation($"Received RewardNotified. User chat is null for memberId: '{context.Message.MemberId}'");
+            _logger.LogWarning($"Received RewardNotified. User chat is null for memberId: '{context.Message.MemberId}'");
             return;
         }
 

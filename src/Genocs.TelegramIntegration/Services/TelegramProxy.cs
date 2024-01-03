@@ -1,20 +1,15 @@
 ﻿using Genocs.Integration.CognitiveServices.IntegrationEvents;
-using Genocs.Integration.CognitiveServices.Interfaces;
 using Genocs.Persistence.MongoDb.Repositories;
 using Genocs.TelegramIntegration.Contracts.Models;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services.Interfaces;
-using MassTransit;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using System.Globalization;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
-using System.Web;
 using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.GettingUpdates;
@@ -31,10 +26,6 @@ public class TelegramProxy : ITelegramProxy
     private readonly OpenAISettings _openAIOptions;
     private readonly ApiClientSettings _apiClientOptions;
     private readonly StripeSettings _stripeOptions;
-    private readonly IFormRecognizer _formRecognizerService;
-    private readonly IImageClassifier _formClassifierService;
-    private readonly IDistributedCache _distributedCache;
-    private readonly IPublishEndpoint _publishEndpoint;
 
     public TelegramProxy(
                          IOptions<TelegramSettings> telegramOptions,
@@ -43,11 +34,7 @@ public class TelegramProxy : ITelegramProxy
                          IOptions<ApiClientSettings> apiClientOptions,
                          IOptions<StripeSettings> stripeOptions,
                          IHttpClientFactory httpClientFactory,
-                         IMongoDbRepository<ChatUpdate> chatUpdateRepository,
-                         IFormRecognizer formRecognizerService,
-                         IImageClassifier formClassifierService,
-                         IDistributedCache distributedCache,
-                         IPublishEndpoint publishEndpoint)
+                         IMongoDbRepository<ChatUpdate> chatUpdateRepository)
     {
         if (telegramOptions == null) throw new ArgumentNullException(nameof(telegramOptions));
         if (telegramOptions.Value == null) throw new ArgumentNullException(nameof(telegramOptions.Value));
@@ -73,11 +60,6 @@ public class TelegramProxy : ITelegramProxy
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
 
         _chatUpdateRepository = chatUpdateRepository ?? throw new ArgumentNullException(nameof(chatUpdateRepository));
-
-        _formRecognizerService = formRecognizerService ?? throw new ArgumentNullException(nameof(formRecognizerService));
-        _formClassifierService = formClassifierService ?? throw new ArgumentNullException(nameof(formClassifierService));
-        _distributedCache = distributedCache ?? throw new ArgumentNullException(nameof(distributedCache));
-        _publishEndpoint = publishEndpoint ?? throw new ArgumentNullException(nameof(publishEndpoint));
     }
 
     /// <summary>
@@ -149,7 +131,7 @@ public class TelegramProxy : ITelegramProxy
                 string? fileId = update?.Message?.Photo?.OrderByDescending(c => c.FileSize).First().FileId;
                 if (!string.IsNullOrEmpty(fileId))
                 {
-                    await ExtractSemanticDataAsync(fileId);
+                    // TODO: Extract Semantic Data
                 }
             }
         }
@@ -176,7 +158,7 @@ public class TelegramProxy : ITelegramProxy
                 string? fileId = update?.Message?.Photo?.OrderByDescending(c => c.FileSize).First().FileId;
                 if (!string.IsNullOrEmpty(fileId))
                 {
-                    await ExtractSemanticDataAsync(fileId);
+                    // TODO: Extract Semantic Data
                 }
             }
         }
@@ -271,7 +253,7 @@ public class TelegramProxy : ITelegramProxy
         // message.Message.From.LanguageCode
 
         // Image
-        if (message.Message.Photo != null)
+        if (message?.Message?.Photo != null)
         {
             // Use Semantic kernel to process the message
             await SendMessageAsync(message.Message.Chat.Id, $"Hello {message.Message.Chat.FirstName}, I got your image and I'm going to process it!");
@@ -279,7 +261,7 @@ public class TelegramProxy : ITelegramProxy
             // Use the file Id to extract Semantic Data
             string fileId = message.Message.Photo.OrderByDescending(c => c.FileSize).First().FileId;
 
-            var formRecognizerResponse = await CallFormRecognizerAsync(fileId);
+            var formRecognizerResponse = await CallFormRecognizerAsync(fileId, message.Message.Chat.Id);
 
             // var formRecognizerResponse = await ExtractSemanticDataAsync(fileId);
 
@@ -293,9 +275,9 @@ public class TelegramProxy : ITelegramProxy
         }
 
         // Check empty message text
-        if (string.IsNullOrWhiteSpace(message.Message.Text))
+        if (string.IsNullOrWhiteSpace(message?.Message?.Text))
         {
-            _logger.LogInformation($"ProcessMessageAsync received Message without text: {message.UpdateId}");
+            _logger.LogInformation($"ProcessMessageAsync received Message without text: {message?.UpdateId}");
             return;
         }
 
@@ -348,7 +330,7 @@ public class TelegramProxy : ITelegramProxy
         return await botClient.SendMessageAsync(recipient, message);
     }
 
-    private async Task<FormDataExtractionCompleted?> CallFormRecognizerAsync(string fileId)
+    private async Task<FormDataExtractionCompleted?> CallFormRecognizerAsync(string fileId, long chatId)
     {
         try
         {
@@ -373,7 +355,13 @@ public class TelegramProxy : ITelegramProxy
                 {
                     { HeaderNames.Accept, "application/json" }
                 },
-                Content = JsonContent.Create(new { Url = urlResource })
+                Content = JsonContent.Create(new
+                {
+                    RequestId = Guid.NewGuid().ToString(),
+                    ContextId = Guid.NewGuid().ToString(),
+                    ReferenceId = chatId.ToString(),
+                    Url = urlResource,
+                })
             };
 
             using var httpClient = _httpClientFactory.CreateClient();
@@ -391,60 +379,6 @@ public class TelegramProxy : ITelegramProxy
         }
 
         return null;
-    }
-
-    private async Task<FormDataExtractionCompleted?> ExtractSemanticDataAsync(string fileId)
-    {
-        FormDataExtractionCompleted result = new FormDataExtractionCompleted();
-
-        try
-        {
-            if (string.IsNullOrWhiteSpace(fileId))
-            {
-                _logger.LogWarning("CallCognitiveServicesAsync: fileId is null or empty");
-                return null;
-            }
-
-            BotClient botClient = new BotClient(_telegramOptions.Token!);
-
-            var botFile = await botClient.GetFileAsync(fileId);
-            if (botFile is null)
-            {
-                _logger.LogWarning($"CallCognitiveServicesAsync: botFile is null. fileId: '{fileId}'");
-                return null;
-            }
-
-            string urlResource = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{botFile.FilePath}";
-            result.ResourceUrl = HttpUtility.HtmlDecode(urlResource);
-
-            // Classify the image to identify the document issuer
-            var classification = await _formClassifierService.ClassifyAsync(result.ResourceUrl);
-
-            if (classification is null)
-            {
-                _logger.LogWarning($"CallCognitiveServicesAsync: classification is null. ResourceUrl: '{result.ResourceUrl}'");
-                return null;
-            }
-
-            if (classification.Predictions is null || classification.Predictions.Count == 0)
-            {
-                _logger.LogWarning($"CallCognitiveServicesAsync: classification is empty. ResourceUrl: '{result.ResourceUrl}'");
-                return null;
-            }
-
-            var firstPrediction = classification.Predictions.OrderByDescending(o => o.Probability).First();
-
-            // This is a workaround to setup distributed cache
-            await _distributedCache.SetAsync("d1fdb12d-c360-4e80-a7e8-75ff63971f0c", Encoding.UTF8.GetBytes("5d3c9567-c874-4bfa-95a1-35588c81be91"));
-
-            result.ContentData = await _formRecognizerService.ScanAsync(firstPrediction.TagId!, result.ResourceUrl);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(500, ex, "ProcessMessageAsync exception while processing CallFormRecognizerAsync");
-        }
-
-        return result;
     }
 
     private async Task<string?> ProcessFormResponseAsync(FormDataExtractionCompleted? formExtractorResponse, long chatId, string? user)
@@ -524,18 +458,22 @@ public class TelegramProxy : ITelegramProxy
             SendInvoiceArgs sendInvoiceArgs = new SendInvoiceArgs(
                                                                   chatId: chatId,
                                                                   title: "Genocs Voucher",
-                                                                  description: $"Voucher of 10 times {amount} EUR!",
+                                                                  description: $"Voucher of {amount} EUR!",
                                                                   payload: "GenocsVoucher",
                                                                   providerToken: _stripeOptions.Token!,
                                                                   currency: "EUR",
                                                                   prices: new List<LabeledPrice>
                                                                   {
-                                                                  new LabeledPrice("Voucher", (int)(value * 1000))
+                                                                  new LabeledPrice("Voucher", (int)(value * 100))
                                                                   });
 
             await botClient.SendInvoiceAsync(sendInvoiceArgs);
         }
+    }
 
+    public Task CheckoutAsync(long recipient, string? amount)
+    {
+        throw new NotImplementedException();
     }
 }
 

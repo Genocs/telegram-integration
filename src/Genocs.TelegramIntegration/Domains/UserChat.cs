@@ -9,6 +9,5 @@ public class UserChat : Core.Domain.Entities.AggregateRoot<ObjectId>, IMongoDbEn
 {
     public long ChatId { get; set; }
     public string MemberId { get; set; } = default!;
-    public string Language { get; set; } = default!;
-
+    public string? Language { get; set; }
 }

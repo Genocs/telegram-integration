@@ -28,4 +28,6 @@ public interface ITelegramProxy
     /// <param name="message">Payload with the message.</param>
     /// <returns>The async response with the message sent to Telegram platform.</returns>
     Task<Telegram.BotAPI.AvailableTypes.Message?> SendMessageAsync(long recipient, string? message);
+
+    Task CheckoutAsync(long recipient, string? message);
 }

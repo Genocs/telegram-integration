@@ -1,9 +1,9 @@
 using Genocs.Core.Builders;
 using Genocs.Logging;
 using Genocs.Metrics.AppMetrics;
-using Genocs.Tracing;
 using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Infrastructure.Extensions;
+using Genocs.Tracing;
 using Serilog;
 using Serilog.Events;
 using System.Reflection;

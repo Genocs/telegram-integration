@@ -2,6 +2,7 @@
 using Genocs.Persistence.MongoDb.Repositories;
 using Genocs.TelegramIntegration.Contracts.Models;
 using Genocs.TelegramIntegration.Domains;
+using Genocs.TelegramIntegration.Models;
 using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -95,7 +96,7 @@ public class TelegramProxy : ITelegramProxy
 
                 if (exist is null)
                 {
-                    var response = await CallGPTAsync(new OpenAIRequest { Prompt = update.Message.Text });
+                    var response = await CallGPTAsync(new PromptRequest { Prompt = update.Message.Text });
 
                     if (response != null && response.Choices?.Any() == true)
                     {
@@ -176,7 +177,7 @@ public class TelegramProxy : ITelegramProxy
 
     private async Task<OpenAIResponse?> CallGPTAsync(OpenAIRequest request)
     {
-        using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _openAIOptions.Url)
+        using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/completions")
         {
             Headers =
             {
@@ -261,6 +262,9 @@ public class TelegramProxy : ITelegramProxy
             // Use the file Id to extract Semantic Data
             string fileId = message.Message.Photo.OrderByDescending(c => c.FileSize).First().FileId;
 
+            string? chatResponse = await CheckImageWithChatGPTAsync(fileId);
+            await SendMessageAsync(message.Message.Chat.Id, chatResponse);
+
             var formRecognizerResponse = await CallFormRecognizerAsync(fileId, message.Message.Chat.Id);
 
             // var formRecognizerResponse = await ExtractSemanticDataAsync(fileId);
@@ -297,7 +301,7 @@ public class TelegramProxy : ITelegramProxy
         }
 
         // Generic test call OpenAI with chat competition model
-        var response = await CallGPTAsync(new OpenAIRequest { Prompt = message.Message.Text });
+        var response = await CallGPTAsync(new PromptRequest { Prompt = message.Message.Text });
 
         if (response != null && response.Choices != null && response.Choices.Any())
         {
@@ -469,6 +473,43 @@ public class TelegramProxy : ITelegramProxy
 
             await botClient.SendInvoiceAsync(sendInvoiceArgs);
         }
+    }
+
+    private async Task<string?> CheckImageWithChatGPTAsync(string? fileId)
+    {
+        string? response = null;
+
+        if(string.IsNullOrEmpty(fileId))
+        {
+            _logger.LogError("called CheckImageWithChatGPTAsync. fileId cannot be null null or empty string");
+            return response;
+        }
+
+        try
+        {
+            BotClient botClient = new BotClient(_telegramOptions.Token!);
+
+            var botFile = await botClient.GetFileAsync(fileId);
+            if (botFile is null)
+            {
+                return response;
+            }
+
+            string urlResource = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{botFile.FilePath}";
+
+            if (string.IsNullOrEmpty(urlResource))
+            {
+                return response;
+            }
+
+            response = await OpenAIBuilder.BuildIsValidTaxFree(urlResource, _openAIOptions.APIKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(500, ex, "ProcessMessageAsync exception while processing CallFormRecognizerAsync");
+        }
+
+        return response;
     }
 
     public Task CheckoutAsync(long recipient, string? amount)

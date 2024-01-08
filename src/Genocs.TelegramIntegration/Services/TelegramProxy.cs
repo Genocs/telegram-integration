@@ -274,7 +274,15 @@ public class TelegramProxy : ITelegramProxy
                                                                          message.Message.Chat.Id,
                                                                          message.Message.Chat.FirstName);
 
-            await Checkout(message.Message.Chat.Id, processFormResponse);
+            if (decimal.TryParse(processFormResponse, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount))
+            {
+                await CheckoutAsync(message.Message.Chat.Id, amount);
+            }
+            else
+            {
+                _logger.LogError($"TryParse return false found: {processFormResponse}", processFormResponse);
+            }
+
             return;
         }
 
@@ -441,45 +449,39 @@ public class TelegramProxy : ITelegramProxy
 
         // Use Prompt engineering to setup response to the user
 
-        await botClient.SendMessageAsync(chatId, $"Hello {user}, we received a TTF with the amount of {refund?.Value} EUR!");
+        await botClient.SendMessageAsync(chatId, $"Hello {user}, your refund amount is {refund?.Value} EUR!");
 
-        await botClient.SendMessageAsync(chatId, $"Hello {user}, you are eligible to receive a Voucher of 10 times {refund?.Value} EUR!");
+        await botClient.SendMessageAsync(chatId, $"Good news {user}, you are eligible to receive a Voucher of {refund?.Value} EUR!");
 
         return refund?.Value;
     }
 
-    private async Task Checkout(long chatId, string? amount)
+    public async Task CheckoutAsync(long recipient, decimal amount, string currency = "EUR")
     {
         // Convert Italian with decimal separator number to decimal
+        // Use Telegram BOT client to send start the payment checkout
+        BotClient botClient = new BotClient(_telegramOptions.Token!);
 
-        IFormatProvider culture = new CultureInfo("it-IT", true);
+        SendInvoiceArgs sendInvoiceArgs = new SendInvoiceArgs(
+                                                              chatId: recipient,
+                                                              title: "Genocs Voucher",
+                                                              description: $"Voucher of {amount} EUR!",
+                                                              payload: "GenocsVoucher",
+                                                              providerToken: _stripeOptions.Token!,
+                                                              currency: currency,
+                                                              prices: new List<LabeledPrice>
+                                                              {
+                                                                  new LabeledPrice("Voucher", (int)(amount * 100))
+                                                              });
 
-        if (decimal.TryParse(amount, culture, out decimal value))
-        {
-            // Use Telegram BOT client to send start the payment checkout
-            BotClient botClient = new BotClient(_telegramOptions.Token!);
-
-            SendInvoiceArgs sendInvoiceArgs = new SendInvoiceArgs(
-                                                                  chatId: chatId,
-                                                                  title: "Genocs Voucher",
-                                                                  description: $"Voucher of {amount} EUR!",
-                                                                  payload: "GenocsVoucher",
-                                                                  providerToken: _stripeOptions.Token!,
-                                                                  currency: "EUR",
-                                                                  prices: new List<LabeledPrice>
-                                                                  {
-                                                                  new LabeledPrice("Voucher", (int)(value * 100))
-                                                                  });
-
-            await botClient.SendInvoiceAsync(sendInvoiceArgs);
-        }
+        await botClient.SendInvoiceAsync(sendInvoiceArgs);
     }
 
     private async Task<string?> CheckImageWithChatGPTAsync(string? fileId)
     {
         string? response = null;
 
-        if(string.IsNullOrEmpty(fileId))
+        if (string.IsNullOrEmpty(fileId))
         {
             _logger.LogError("called CheckImageWithChatGPTAsync. fileId cannot be null null or empty string");
             return response;
@@ -510,11 +512,6 @@ public class TelegramProxy : ITelegramProxy
         }
 
         return response;
-    }
-
-    public Task CheckoutAsync(long recipient, string? amount)
-    {
-        throw new NotImplementedException();
     }
 }
 

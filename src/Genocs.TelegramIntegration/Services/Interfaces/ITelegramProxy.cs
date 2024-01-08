@@ -29,5 +29,12 @@ public interface ITelegramProxy
     /// <returns>The async response with the message sent to Telegram platform.</returns>
     Task<Telegram.BotAPI.AvailableTypes.Message?> SendMessageAsync(long recipient, string? message);
 
-    Task CheckoutAsync(long recipient, string? message);
+    /// <summary>
+    /// Send a checkout request to the user.
+    /// </summary>
+    /// <param name="recipient">The recipient as chatId.</param>
+    /// <param name="amount">The amount.</param>
+    /// <param name="currency">the currency.</param>
+    /// <returns>The async response with the message sent to Telegram platform.</returns>
+    Task CheckoutAsync(long recipient, decimal amount, string currency = "EUR");
 }

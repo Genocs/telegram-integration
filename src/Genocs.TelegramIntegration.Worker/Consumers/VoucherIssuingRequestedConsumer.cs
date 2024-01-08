@@ -29,19 +29,32 @@ public class VoucherIssuingRequestedConsumer : IConsumer<VoucherIssuingRequested
     {
         _logger.LogDebug("Received VoucherIssuingRequested");
 
-        UserChat chat = await _usersChatRepository.FirstOrDefaultAsync(x => x.MemberId == context.Message.MemberId);
-
-        // Notify and
-        await _telegramProxy.SendMessageAsync(chat.ChatId, "VoucherIssuingRequested");
-
-        // Check the amount of vouchers issued for the user
-
-        if (context.Message.Cost > 0)
+        if (string.IsNullOrEmpty(context.Message.ReferenceId))
         {
-            // Send notification to complete checkout about the cost of the voucher
-            await _telegramProxy.CheckoutAsync(chat.ChatId, "VoucherIssuingRequestedCost");
+            _logger.LogWarning($"Received VoucherIssuingRequested. ReferenceId is null or empty for memberId: '{context.Message.MemberId}'");
+            return;
         }
 
-        await Task.CompletedTask;
+        if (long.TryParse(context.Message.ReferenceId, out long referenceId))
+        {
+
+            UserChat chat = await _usersChatRepository.FirstOrDefaultAsync(x => x.ChatId == referenceId);
+
+            if (chat is null)
+            {
+                _logger.LogWarning($"Received VoucherIssuingRequested. User chat is null for memberId: '{context.Message.MemberId}'");
+                return;
+            }
+
+            // Notify
+            await _telegramProxy.SendMessageAsync(chat.ChatId, "VoucherIssuingRequested");
+
+            // Check the amount of vouchers issued for the user
+            if (context.Message.Cost > 0)
+            {
+                // Send notification to complete checkout about the cost of the voucher
+                await _telegramProxy.CheckoutAsync(chat.ChatId, context.Message.Cost, "EUR");
+            }
+        }
     }
 }

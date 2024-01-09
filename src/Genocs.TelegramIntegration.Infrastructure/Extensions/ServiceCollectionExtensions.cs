@@ -90,6 +90,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IImageClassifier, ImageClassifierService>();
 
         services.TryAddScoped<ITelegramProxy, TelegramProxy>();
+        services.TryAddScoped<IOpenAIMiddleware, OpenAIMiddleware>();
 
         return services;
     }

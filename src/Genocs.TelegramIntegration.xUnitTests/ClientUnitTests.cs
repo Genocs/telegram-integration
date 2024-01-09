@@ -20,12 +20,7 @@ public class ClientUnitTests
         Options.TelegramSettings telegramOptions = new Options.TelegramSettings() { Token = "TelegramSettingOption" };
         mockTelegramOptions.Setup(ap => ap.Value).Returns(telegramOptions);
 
-        var mockOpenAISettings = new Mock<IOptions<Options.OpenAISettings>>();
-
-        // We need to set the Value of IOptions to be the Options.OpenAISettings Class
-        Options.OpenAISettings openAIOptions = new Options.OpenAISettings() { APIKey = "APIKey", Url = "Url" };
-        mockOpenAISettings.Setup(ap => ap.Value).Returns(openAIOptions);
-
+        var mockOpenAIMiddleware = new Mock<IOpenAIMiddleware>();
         var mockApiClientOptions = new Mock<IOptions<Options.ApiClientSettings>>();
 
         // We need to set the Value of IOptions to be the Options.ApiClientSettings Class
@@ -50,7 +45,7 @@ public class ClientUnitTests
         ITelegramProxy proxy = new TelegramProxy(
                                                  mockTelegramOptions.Object,
                                                  mockLogger.Object,
-                                                 mockOpenAISettings.Object,
+                                                 mockOpenAIMiddleware.Object,
                                                  mockApiClientOptions.Object,
                                                  mockStripeOptions.Object,
                                                  mockHttpClientFactory.Object,

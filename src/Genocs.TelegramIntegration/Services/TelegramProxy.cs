@@ -1,8 +1,6 @@
 ﻿using Genocs.Integration.CognitiveServices.IntegrationEvents;
 using Genocs.Persistence.MongoDb.Repositories;
-using Genocs.TelegramIntegration.Contracts.Models;
 using Genocs.TelegramIntegration.Domains;
-using Genocs.TelegramIntegration.Models;
 using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -24,14 +22,14 @@ public class TelegramProxy : ITelegramProxy
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IMongoDbRepository<ChatUpdate> _chatUpdateRepository;
     private readonly TelegramSettings _telegramOptions;
-    private readonly OpenAISettings _openAIOptions;
+    private readonly IOpenAIMiddleware _openAIMiddleware;
     private readonly ApiClientSettings _apiClientOptions;
     private readonly StripeSettings _stripeOptions;
 
     public TelegramProxy(
                          IOptions<TelegramSettings> telegramOptions,
                          ILogger<TelegramProxy> logger,
-                         IOptions<OpenAISettings> openAIOptions,
+                         IOpenAIMiddleware openAIMiddleware,
                          IOptions<ApiClientSettings> apiClientOptions,
                          IOptions<StripeSettings> stripeOptions,
                          IHttpClientFactory httpClientFactory,
@@ -41,11 +39,7 @@ public class TelegramProxy : ITelegramProxy
         if (telegramOptions.Value == null) throw new ArgumentNullException(nameof(telegramOptions.Value));
 
         _telegramOptions = telegramOptions.Value;
-
-        if (openAIOptions == null) throw new ArgumentNullException(nameof(openAIOptions));
-        if (openAIOptions.Value == null) throw new ArgumentNullException(nameof(openAIOptions.Value));
-
-        _openAIOptions = openAIOptions.Value;
+        _openAIMiddleware = openAIMiddleware;
 
         if (apiClientOptions == null) throw new ArgumentNullException(nameof(apiClientOptions));
         if (apiClientOptions.Value == null) throw new ArgumentNullException(nameof(apiClientOptions.Value));
@@ -96,16 +90,8 @@ public class TelegramProxy : ITelegramProxy
 
                 if (exist is null)
                 {
-                    var response = await CallGPTAsync(new PromptRequest { Prompt = update.Message.Text });
-
-                    if (response != null && response.Choices?.Any() == true)
-                    {
-                        var choice = response.Choices.FirstOrDefault();
-                        if (choice != null)
-                        {
-                            var res = botClient.SendMessage(update.Message.Chat.Id, choice.Text);
-                        }
-                    }
+                    string? chatResponse = await _openAIMiddleware.ChatWithGPTAsync(update.Message.Text);
+                    await SendMessageAsync(update.Message.Chat.Id, chatResponse);
                 }
             }
         }
@@ -175,30 +161,6 @@ public class TelegramProxy : ITelegramProxy
         }
     }
 
-    private async Task<OpenAIResponse?> CallGPTAsync(OpenAIRequest request)
-    {
-        using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/completions")
-        {
-            Headers =
-            {
-                { HeaderNames.Accept, "application/json" },
-                { HeaderNames.Authorization, $"Bearer {_openAIOptions.APIKey}"}
-            },
-            Content = JsonContent.Create(request)
-        };
-
-        using var httpClient = _httpClientFactory.CreateClient();
-        var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
-
-        if (httpResponseMessage.IsSuccessStatusCode)
-        {
-            using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
-            return await JsonSerializer.DeserializeAsync<OpenAIResponse>(contentStream);
-        }
-
-        return null;
-    }
-
     /// <summary>
     /// Process a message from Telegram.
     /// This function is called by the webhook.
@@ -229,6 +191,8 @@ public class TelegramProxy : ITelegramProxy
                 return;
             }
         }
+
+        string? chatResponse;
 
         // Make payment unique
         // Payment
@@ -262,7 +226,7 @@ public class TelegramProxy : ITelegramProxy
             // Use the file Id to extract Semantic Data
             string fileId = message.Message.Photo.OrderByDescending(c => c.FileSize).First().FileId;
 
-            string? chatResponse = await CheckImageWithChatGPTAsync(fileId);
+            chatResponse = await CheckImageWithChatGPTAsync(fileId);
             await SendMessageAsync(message.Message.Chat.Id, chatResponse);
 
             var formRecognizerResponse = await CallFormRecognizerAsync(fileId, message.Message.Chat.Id);
@@ -308,17 +272,8 @@ public class TelegramProxy : ITelegramProxy
             return;
         }
 
-        // Generic test call OpenAI with chat competition model
-        var response = await CallGPTAsync(new PromptRequest { Prompt = message.Message.Text });
-
-        if (response != null && response.Choices != null && response.Choices.Any())
-        {
-            var choice = response.Choices.FirstOrDefault();
-            if (choice != null)
-            {
-                await SendMessageAsync(message.Message.From.Id, choice.Text);
-            }
-        }
+        chatResponse = await _openAIMiddleware.ChatWithGPTAsync(message.Message.Text);
+        await SendMessageAsync(message.Message.From.Id, chatResponse);
 
         messageToProcess.Processed = true;
         await _chatUpdateRepository.UpdateAsync(messageToProcess);
@@ -504,7 +459,7 @@ public class TelegramProxy : ITelegramProxy
                 return response;
             }
 
-            response = await OpenAIBuilder.BuildIsValidTaxFree(urlResource, _openAIOptions.APIKey);
+            response = await _openAIMiddleware.ValidateTaxFreeFormAsync(urlResource);
         }
         catch (Exception ex)
         {

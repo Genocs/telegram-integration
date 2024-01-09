@@ -8,7 +8,4 @@ public class OpenAISettings
 
     [Required(AllowEmptyStrings = false, ErrorMessage = "OpenAI APIKey cannot be null or empty")]
     public string APIKey { get; set; } = default!;
-
-    [Required(AllowEmptyStrings = false, ErrorMessage = "OpenAI Url cannot be null or empty")]
-    public string Url { get; set; } = default!;
 }

@@ -2,6 +2,11 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
+        <PackageId>Genocs.TelegramIntegration.Infrastructure</PackageId>
+        <RootNamespace>Genocs.TelegramIntegration.Infrastructure</RootNamespace>
+        <AssemblyName>Genocs.TelegramIntegration.Infrastructure</AssemblyName>
+        <Title>The TelegramIntegration infrastructure library.</Title>
+        <Description>The TelegramIntegration infrastructure library.</Description>
     </PropertyGroup>
 
     <ItemGroup>

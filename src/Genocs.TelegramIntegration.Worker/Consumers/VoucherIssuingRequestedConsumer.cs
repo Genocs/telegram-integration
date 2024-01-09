@@ -10,19 +10,16 @@ public class VoucherIssuingRequestedConsumer : IConsumer<VoucherIssuingRequested
 {
     private readonly ILogger<VoucherIssuingRequestedConsumer> _logger;
     private readonly ITelegramProxy _telegramProxy;
-    private readonly IMongoDbRepository<UserChat> _usersChatRepository;
-    private readonly IMongoDbRepository<LocalizedMessage> _localizedMessagesRepository;
+    private readonly IMongoDbRepository<ChatUpdate> _chatUpdateRepository;
 
     public VoucherIssuingRequestedConsumer(
                                             ILogger<VoucherIssuingRequestedConsumer> logger,
                                             ITelegramProxy telegramProxy,
-                                            IMongoDbRepository<UserChat> usersChatRepository,
-                                            IMongoDbRepository<LocalizedMessage> localizedMessagesRepository)
+                                            IMongoDbRepository<ChatUpdate> chatUpdateRepository)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _telegramProxy = telegramProxy ?? throw new ArgumentNullException(nameof(telegramProxy));
-        _usersChatRepository = usersChatRepository ?? throw new ArgumentNullException(nameof(usersChatRepository));
-        _localizedMessagesRepository = localizedMessagesRepository ?? throw new ArgumentNullException(nameof(localizedMessagesRepository));
+        _chatUpdateRepository = chatUpdateRepository ?? throw new ArgumentNullException(nameof(chatUpdateRepository));
     }
 
     public async Task Consume(ConsumeContext<VoucherIssuingRequested> context)
@@ -31,29 +28,29 @@ public class VoucherIssuingRequestedConsumer : IConsumer<VoucherIssuingRequested
 
         if (string.IsNullOrEmpty(context.Message.ReferenceId))
         {
-            _logger.LogWarning($"Received VoucherIssuingRequested. ReferenceId is null or empty for memberId: '{context.Message.MemberId}'");
+            _logger.LogWarning($"Received VoucherIssuingRequested. ReferenceId is null or empty");
             return;
         }
 
-        if (long.TryParse(context.Message.ReferenceId, out long referenceId))
+        if (int.TryParse(context.Message.ReferenceId, out int updateId))
         {
 
-            UserChat chat = await _usersChatRepository.FirstOrDefaultAsync(x => x.ChatId == referenceId);
+            ChatUpdate update = await _chatUpdateRepository.FirstOrDefaultAsync(x => x.Message.UpdateId == updateId);
 
-            if (chat is null)
+            if (update is null)
             {
-                _logger.LogWarning($"Received VoucherIssuingRequested. User chat is null for memberId: '{context.Message.MemberId}'");
+                _logger.LogWarning($"Received VoucherIssuingRequested. ChatUpdate  is null for the updateId: '{context.Message.ReferenceId}'");
                 return;
             }
 
             // Notify
-            await _telegramProxy.SendMessageAsync(chat.ChatId, "VoucherIssuingRequested");
+            await _telegramProxy.SendMessageAsync(update.Message.Message.Chat.Id, "VoucherIssuingRequested");
 
             // Check the amount of vouchers issued for the user
             if (context.Message.Cost > 0)
             {
                 // Send notification to complete checkout about the cost of the voucher
-                await _telegramProxy.CheckoutAsync(chat.ChatId, context.Message.Cost, "EUR");
+                await _telegramProxy.CheckoutAsync(update.Message.Message.Chat.Id, context.Message.Cost, "EUR");
             }
         }
     }

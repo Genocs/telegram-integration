@@ -211,6 +211,8 @@ public class TelegramProxy : ITelegramProxy
                                          photo: $"https://qrcode.tec-it.com/API/QRCode?data={message.PreCheckoutQuery.Id}",
                                          caption: $"This is Your Voucher, please use it during the checkout. It will expire on: {DateTime.UtcNow.AddDays(10).ToLongDateString()}!");
 
+            messageToProcess.Processed = true;
+            await _chatUpdateRepository.UpdateAsync(messageToProcess);
             return;
         }
 
@@ -229,7 +231,7 @@ public class TelegramProxy : ITelegramProxy
             chatResponse = await CheckImageWithChatGPTAsync(fileId);
             await SendMessageAsync(message.Message.Chat.Id, chatResponse);
 
-            var formRecognizerResponse = await CallFormRecognizerAsync(fileId, message.Message.Chat.Id);
+            var formRecognizerResponse = await CallFormRecognizerAsync(fileId, message.UpdateId);
 
             // var formRecognizerResponse = await ExtractSemanticDataAsync(fileId);
 
@@ -247,6 +249,8 @@ public class TelegramProxy : ITelegramProxy
                 _logger.LogError($"TryParse return false found: {processFormResponse}", processFormResponse);
             }
 
+            messageToProcess.Processed = true;
+            await _chatUpdateRepository.UpdateAsync(messageToProcess);
             return;
         }
 
@@ -254,6 +258,8 @@ public class TelegramProxy : ITelegramProxy
         if (string.IsNullOrWhiteSpace(message?.Message?.Text))
         {
             _logger.LogInformation($"ProcessMessageAsync received Message without text: {message?.UpdateId}");
+            messageToProcess.Processed = true;
+            await _chatUpdateRepository.UpdateAsync(messageToProcess);
             return;
         }
 
@@ -261,6 +267,8 @@ public class TelegramProxy : ITelegramProxy
         if (message.Message.Text.Trim().StartsWith("/") || message.Message.Text.Trim().StartsWith("@"))
         {
             _logger.LogInformation($"ProcessMessageAsync received Message with command text: {message.UpdateId}");
+            messageToProcess.Processed = true;
+            await _chatUpdateRepository.UpdateAsync(messageToProcess);
             return;
         }
 
@@ -269,6 +277,8 @@ public class TelegramProxy : ITelegramProxy
         {
             await SendMessageAsync(message.Message.From.Id, "Thanks for request a suggestion. Unfortunately Fiscanner integration is a work in progress!");
             _logger.LogInformation($"ProcessMessageAsync received Message with suggestion: {message.UpdateId}");
+            messageToProcess.Processed = true;
+            await _chatUpdateRepository.UpdateAsync(messageToProcess);
             return;
         }
 
@@ -297,7 +307,7 @@ public class TelegramProxy : ITelegramProxy
         return await botClient.SendMessageAsync(recipient, message);
     }
 
-    private async Task<FormDataExtractionCompleted?> CallFormRecognizerAsync(string fileId, long chatId)
+    private async Task<FormDataExtractionCompleted?> CallFormRecognizerAsync(string fileId, int updateId)
     {
         try
         {
@@ -306,6 +316,7 @@ public class TelegramProxy : ITelegramProxy
             var botFile = await botClient.GetFileAsync(fileId);
             if (botFile is null)
             {
+                _logger.LogError("Resource: '{botFile}' is null or empty", botFile);
                 return null;
             }
 
@@ -313,9 +324,11 @@ public class TelegramProxy : ITelegramProxy
 
             if (string.IsNullOrEmpty(urlResource))
             {
+                _logger.LogError("Resource: '{urlResource}' is null or empty", urlResource);
                 return null;
             }
 
+            // TODO: Refactor this code with Genocs HTTP Client
             using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _apiClientOptions.FormRecognizerUrl)
             {
                 Headers =
@@ -326,7 +339,7 @@ public class TelegramProxy : ITelegramProxy
                 {
                     RequestId = Guid.NewGuid().ToString(),
                     ContextId = Guid.NewGuid().ToString(),
-                    ReferenceId = chatId.ToString(),
+                    ReferenceId = updateId.ToString(),
                     Url = urlResource,
                 })
             };
@@ -336,9 +349,11 @@ public class TelegramProxy : ITelegramProxy
 
             if (httpResponseMessage.IsSuccessStatusCode)
             {
-                using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
+                await using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
                 return await JsonSerializer.DeserializeAsync<FormDataExtractionCompleted?>(contentStream, options: new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
+
+            // End TODO
         }
         catch (Exception ex)
         {

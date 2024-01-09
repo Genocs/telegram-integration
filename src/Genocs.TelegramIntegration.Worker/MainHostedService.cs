@@ -1,6 +1,6 @@
 ﻿using Genocs.TelegramIntegration.Services.Interfaces;
 
-namespace Genocs.Core.Demo.Worker;
+namespace Genocs.TelegramIntegration.Worker;
 
 public class MainHostedService : IHostedService, IDisposable
 {

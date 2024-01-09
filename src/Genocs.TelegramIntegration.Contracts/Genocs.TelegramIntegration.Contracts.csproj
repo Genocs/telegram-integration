@@ -2,6 +2,11 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
+        <PackageId>Genocs.TelegramIntegration.Contracts</PackageId>
+        <RootNamespace>Genocs.TelegramIntegration.Contracts</RootNamespace>
+        <AssemblyName>Genocs.TelegramIntegration.Contracts</AssemblyName>
+        <Title>The TelegramIntegration contracts library.</Title>
+        <Description>The TelegramIntegration contracts library.</Description>
     </PropertyGroup>
 
 </Project>

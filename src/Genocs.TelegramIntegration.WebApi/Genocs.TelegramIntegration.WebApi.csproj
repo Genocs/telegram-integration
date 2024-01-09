@@ -2,6 +2,11 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
+        <PackageId>Genocs.TelegramIntegration.WebApi</PackageId>
+        <RootNamespace>Genocs.TelegramIntegration.WebApi</RootNamespace>
+        <AssemblyName>Genocs.TelegramIntegration.WebApi</AssemblyName>
+        <Title>The TelegramIntegration webapi service.</Title>
+        <Description>The TelegramIntegration webapi service.</Description>
         <DockerTargetOS>Linux</DockerTargetOS>
         <UserSecretsId>Genocs</UserSecretsId>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
@@ -9,7 +14,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Genocs.Logging" Version="5.0.*" />        
+        <PackageReference Include="Genocs.Logging" Version="5.0.*" />
         <PackageReference Include="Genocs.Metrics" Version="5.0.*" />
         <PackageReference Include="Genocs.Tracing" Version="5.0.*" />
     </ItemGroup>

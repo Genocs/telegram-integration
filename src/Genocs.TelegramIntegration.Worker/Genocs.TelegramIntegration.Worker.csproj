@@ -2,6 +2,11 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
+        <PackageId>Genocs.TelegramIntegration.Worker</PackageId>
+        <RootNamespace>Genocs.TelegramIntegration.Worker</RootNamespace>
+        <AssemblyName>Genocs.TelegramIntegration.Worker</AssemblyName>
+        <Title>The TelegramIntegration worker service.</Title>
+        <Description>The TelegramIntegration worker service.</Description>
         <DockerTargetOS>Linux</DockerTargetOS>
         <UserSecretsId>Genocs</UserSecretsId>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
@@ -24,10 +29,6 @@
     <ItemGroup>
         <ProjectReference Include="..\Genocs.TelegramIntegration.Infrastructure\Genocs.TelegramIntegration.Infrastructure.csproj" />
         <ProjectReference Include="..\Genocs.TelegramIntegration\Genocs.TelegramIntegration.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="HttpClients\" />
     </ItemGroup>
 
 </Project>

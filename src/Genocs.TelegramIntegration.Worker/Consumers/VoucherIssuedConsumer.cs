@@ -6,14 +6,14 @@ using MassTransit;
 
 namespace Genocs.TelegramIntegration.Worker.Consumers;
 
-public class VoucherIssuingRequestedConsumer : IConsumer<VoucherIssuingRequested>
+public class VoucherIssuedConsumer : IConsumer<VoucherIssued>
 {
-    private readonly ILogger<VoucherIssuingRequestedConsumer> _logger;
+    private readonly ILogger<VoucherIssuedConsumer> _logger;
     private readonly ITelegramProxy _telegramProxy;
     private readonly IMongoDbRepository<ChatUpdate> _chatUpdateRepository;
 
-    public VoucherIssuingRequestedConsumer(
-                                            ILogger<VoucherIssuingRequestedConsumer> logger,
+    public VoucherIssuedConsumer(
+                                            ILogger<VoucherIssuedConsumer> logger,
                                             ITelegramProxy telegramProxy,
                                             IMongoDbRepository<ChatUpdate> chatUpdateRepository)
     {
@@ -22,13 +22,13 @@ public class VoucherIssuingRequestedConsumer : IConsumer<VoucherIssuingRequested
         _chatUpdateRepository = chatUpdateRepository ?? throw new ArgumentNullException(nameof(chatUpdateRepository));
     }
 
-    public async Task Consume(ConsumeContext<VoucherIssuingRequested> context)
+    public async Task Consume(ConsumeContext<VoucherIssued> context)
     {
-        _logger.LogDebug("Received VoucherIssuingRequested");
+        _logger.LogDebug("Received VoucherIssued");
 
         if (string.IsNullOrEmpty(context.Message.ReferenceId))
         {
-            _logger.LogWarning($"Received VoucherIssuingRequested. ReferenceId is null or empty");
+            _logger.LogWarning($"Received VoucherIssued. ReferenceId is null or empty");
             return;
         }
 

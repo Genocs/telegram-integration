@@ -231,24 +231,7 @@ public class TelegramProxy : ITelegramProxy
             chatResponse = await CheckImageWithChatGPTAsync(fileId);
             await SendMessageAsync(message.Message.Chat.Id, chatResponse);
 
-            var formRecognizerResponse = await CallFormRecognizerAsync(fileId, message.UpdateId);
-
-            // var formRecognizerResponse = await ExtractSemanticDataAsync(fileId);
-
-            string? processFormResponse = await ProcessFormResponseAsync(
-                                                                         formRecognizerResponse,
-                                                                         message.Message.Chat.Id,
-                                                                         message.Message.Chat.FirstName);
-
-            if (decimal.TryParse(processFormResponse, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount))
-            {
-                await CheckoutAsync(message.Message.Chat.Id, amount);
-            }
-            else
-            {
-                _logger.LogError($"TryParse return false found: {processFormResponse}", processFormResponse);
-            }
-
+            await CallFormRecognizerAsync(fileId, message.UpdateId);
             messageToProcess.Processed = true;
             await _chatUpdateRepository.UpdateAsync(messageToProcess);
             return;
@@ -418,18 +401,18 @@ public class TelegramProxy : ITelegramProxy
         BotClient botClient = new BotClient(_telegramOptions.Token!);
 
         // Use Prompt engineering to setup response to the user
-
-        await botClient.SendMessageAsync(chatId, $"Hello {user}, your refund amount is {refund?.Value} EUR!");
-
-        await botClient.SendMessageAsync(chatId, $"Good news {user}, you are eligible to receive a Voucher of {refund?.Value} EUR!");
-
+        await botClient.SendMessageAsync(chatId, $"Hello {user}, your refund amount is {refund?.Value} EUR! Good news, you are eligible to receive a Voucher");
         return refund?.Value;
     }
 
     public async Task CheckoutAsync(long recipient, decimal amount, string currency = "EUR")
     {
-        // Convert Italian with decimal separator number to decimal
-        // Use Telegram BOT client to send start the payment checkout
+        if (amount <= 0)
+        {
+            _logger.LogError("CheckoutAsync: amount cannot be less or equal to 0");
+            return;
+        }
+
         BotClient botClient = new BotClient(_telegramOptions.Token!);
 
         SendInvoiceArgs sendInvoiceArgs = new SendInvoiceArgs(

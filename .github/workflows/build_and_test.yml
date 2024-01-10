@@ -1,4 +1,4 @@
-name: Build test and pack
+name: Build and test
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build test and pack
+    name: Build and test
     runs-on: ubuntu-latest
 
     steps:
@@ -29,6 +29,3 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build --verbosity normal
-
-      - name: Pack
-        run: dotnet pack --no-build --verbosity normal

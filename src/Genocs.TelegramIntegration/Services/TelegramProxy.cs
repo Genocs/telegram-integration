@@ -6,7 +6,6 @@ using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
-using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Telegram.BotAPI;
@@ -98,57 +97,9 @@ public class TelegramProxy : ITelegramProxy
 
         // Check Documents
         var documentToUpdates = updates.Where(c => c.Message != null && c.Message.Document != null);
-        if (documentToUpdates != null && documentToUpdates.Any())
-        {
-            foreach (var update in documentToUpdates)
-            {
-                if (string.IsNullOrEmpty(update.Message?.Caption))
-                {
-                    var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
-                    continue;
-                }
-
-                if (!string.IsNullOrEmpty(update.Message.Caption) && update.Message.Caption.ToLower().Contains("tff"))
-                {
-                    var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
-                    continue;
-                }
-
-                // Cognitive services integration here
-                string? fileId = update?.Message?.Photo?.OrderByDescending(c => c.FileSize).First().FileId;
-                if (!string.IsNullOrEmpty(fileId))
-                {
-                    // TODO: Extract Semantic Data
-                }
-            }
-        }
 
         // Check Images
         var photoToUpdates = updates.Where(c => c.Message != null && c.Message.Photo != null);
-        if (photoToUpdates != null && photoToUpdates.Any())
-        {
-            foreach (var update in photoToUpdates)
-            {
-                if (string.IsNullOrEmpty(update.Message?.Caption))
-                {
-                    var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, non capisco che cosa mi hai mandato!");
-                    continue;
-                }
-
-                if (!string.IsNullOrEmpty(update.Message?.Caption) && update.Message.Caption.ToLower().Contains("tff"))
-                {
-                    var res = botClient.SendMessage(update.Message.Chat.Id, "Ciao, ho ricevuto la tua fattura TaxFree e ho iniziato a processarla!");
-                    continue;
-                }
-
-                // Cognitive services integration here
-                string? fileId = update?.Message?.Photo?.OrderByDescending(c => c.FileSize).First().FileId;
-                if (!string.IsNullOrEmpty(fileId))
-                {
-                    // TODO: Extract Semantic Data
-                }
-            }
-        }
 
         // Check Invoice
         var invoiceToUpdates = updates.Where(c => c.PreCheckoutQuery != null);
@@ -346,66 +297,7 @@ public class TelegramProxy : ITelegramProxy
         return null;
     }
 
-    private async Task<string?> ProcessFormResponseAsync(FormDataExtractionCompleted? formExtractorResponse, long chatId, string? user)
-    {
-        if (formExtractorResponse == null)
-        {
-            _logger.LogWarning("ProcessFormResponseAsync: formExtractorResponse is null");
-            return null;
-        }
-
-        if (formExtractorResponse.ContentData == null)
-        {
-            _logger.LogWarning("ProcessFormResponseAsync: formExtractorResponse.ContentData is null");
-            return null;
-        }
-
-        if (formExtractorResponse.ContentData.Count <= 0)
-        {
-            _logger.LogWarning("ProcessFormResponseAsync: formExtractorResponse.ContentData.Count <= 0");
-            return null;
-        }
-
-        // Read from list of dynamic data contained into ContentData
-        // Check the RefundAmount field inside the ContentData
-        JsonElement dictionaryElement = (JsonElement)formExtractorResponse.ContentData[0];
-        IDictionary<string, FormRecord?>? dictionaryData = dictionaryElement.Deserialize<IDictionary<string, FormRecord?>>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        if (dictionaryData is null)
-        {
-            _logger.LogWarning("ProcessFormResponseAsync: dictionaryData is null");
-            return null;
-        }
-
-        if (!dictionaryData.ContainsKey("RefundAmount"))
-        {
-            _logger.LogWarning("ProcessFormResponseAsync: dictionaryData doesn't contain RefundAmount");
-            return null;
-        }
-
-        FormRecord? refund = JsonSerializer.Deserialize<FormRecord>(JsonSerializer.Serialize(dictionaryData["RefundAmount"]));
-
-        if (refund is null)
-        {
-            _logger.LogWarning("ProcessFormResponseAsync: refund is null");
-            return null;
-        }
-
-        // Save the document on the database for future reference
-
-        /*
-         *  MOVE OUTSIDE
-         */
-
-        // Use Telegram BOT client to send the voucher barcode image
-        BotClient botClient = new BotClient(_telegramOptions.Token!);
-
-        // Use Prompt engineering to setup response to the user
-        await botClient.SendMessageAsync(chatId, $"Hello {user}, your refund amount is {refund?.Value} EUR! Good news, you are eligible to receive a Voucher");
-        return refund?.Value;
-    }
-
-    public async Task CheckoutAsync(long recipient, decimal amount, string currency = "EUR")
+    public async Task CheckoutAsync(string orderId, long recipient, decimal amount, string currency = "EUR")
     {
         if (amount <= 0)
         {
@@ -419,7 +311,7 @@ public class TelegramProxy : ITelegramProxy
                                                               chatId: recipient,
                                                               title: "Genocs Voucher",
                                                               description: $"Voucher of {amount} EUR!",
-                                                              payload: "GenocsVoucher",
+                                                              payload: orderId,
                                                               providerToken: _stripeOptions.Token!,
                                                               currency: currency,
                                                               prices: new List<LabeledPrice>

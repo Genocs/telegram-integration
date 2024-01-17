@@ -2,7 +2,7 @@
 using Genocs.TelegramIntegration.Services.Interfaces;
 using MassTransit;
 
-namespace Genocs.TelegramIntegration.Worker.Consumers;
+namespace Genocs.TelegramIntegration.WebApi.Consumers;
 
 public class LangChainResponseConsumer : IConsumer<LangChainResponse>
 {

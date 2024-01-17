@@ -4,7 +4,7 @@ using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using MassTransit;
 
-namespace Genocs.TelegramIntegration.Worker.Consumers;
+namespace Genocs.TelegramIntegration.WebApi.Consumers;
 
 public class VoucherIssuedConsumer : IConsumer<VoucherIssued>
 {
@@ -35,7 +35,7 @@ public class VoucherIssuedConsumer : IConsumer<VoucherIssued>
         if (int.TryParse(context.Message.ReferenceId, out int updateId))
         {
 
-            ChatUpdate update = await _chatUpdateRepository.FirstOrDefaultAsync(x => x.Message.UpdateId == updateId);
+            var update = await _chatUpdateRepository.FirstOrDefaultAsync(x => x.Message.UpdateId == updateId);
 
             if (update is null)
             {
@@ -50,7 +50,7 @@ public class VoucherIssuedConsumer : IConsumer<VoucherIssued>
             if (context.Message.Cost > 0)
             {
                 // Send notification to complete checkout about the cost of the voucher
-                await _telegramProxy.CheckoutAsync(update.Message.Message.Chat.Id, context.Message.Cost, "EUR");
+                await _telegramProxy.CheckoutAsync(context.Message.VoucherId, update.Message.Message.Chat.Id, context.Message.Cost, "EUR");
             }
         }
     }

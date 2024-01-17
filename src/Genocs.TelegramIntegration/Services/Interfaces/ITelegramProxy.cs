@@ -32,9 +32,10 @@ public interface ITelegramProxy
     /// <summary>
     /// Send a checkout request to the user.
     /// </summary>
+    /// <param name="orderId">The orderId.</param>
     /// <param name="recipient">The recipient as chatId.</param>
     /// <param name="amount">The amount.</param>
     /// <param name="currency">the currency.</param>
     /// <returns>The async response with the message sent to Telegram platform.</returns>
-    Task CheckoutAsync(long recipient, decimal amount, string currency = "EUR");
+    Task CheckoutAsync(string orderId, long recipient, decimal amount, string currency = "EUR");
 }

@@ -10,44 +10,42 @@ public class RewardProcessedConsumer : IConsumer<RewardProcessed>
 {
     private readonly ILogger<RewardProcessedConsumer> _logger;
     private readonly ITelegramProxy _telegramProxy;
-    private readonly IMongoDbRepository<UserChat> _usersChatRepository;
-    private readonly IMongoDbRepository<LocalizedMessage> _localizedMessagesRepository;
+    private readonly IMongoDbRepository<ChatUpdate> _chatUpdateRepository;
 
     public RewardProcessedConsumer(
                                    ILogger<RewardProcessedConsumer> logger,
                                    ITelegramProxy telegramProxy,
-                                   IMongoDbRepository<UserChat> usersChatRepository,
-                                   IMongoDbRepository<LocalizedMessage> localizedMessagesRepository)
+                                   IMongoDbRepository<ChatUpdate> chatUpdateRepository)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _telegramProxy = telegramProxy ?? throw new ArgumentNullException(nameof(telegramProxy));
-        _usersChatRepository = usersChatRepository ?? throw new ArgumentNullException(nameof(usersChatRepository));
-        _localizedMessagesRepository = localizedMessagesRepository ?? throw new ArgumentNullException(nameof(localizedMessagesRepository));
+        _chatUpdateRepository = chatUpdateRepository ?? throw new ArgumentNullException(nameof(chatUpdateRepository));
     }
 
     public async Task Consume(ConsumeContext<RewardProcessed> context)
     {
         _logger.LogInformation("Received RewardProcessed");
+        await Task.CompletedTask;
 
-        var user = await _usersChatRepository.FirstOrDefaultAsync(c => c.MemberId == context.Message.MemberId);
+        //if (string.IsNullOrEmpty(context.Message.ReferenceId))
+        //{
+        //    _logger.LogInformation($"Received RewardProcessed. ReferenceId is null or empty");
+        //    return;
+        //}
 
-        if (user is null)
-        {
-            _logger.LogInformation($"Received RewardProcessed. User chat is null for memberId: '{context.Message.MemberId}'");
-            return;
-        }
+        //if (int.TryParse(context.Message.ReferenceId, out int updateId))
+        //{
 
-        var localizedMessage = await _localizedMessagesRepository.FirstOrDefaultAsync(c => c.LanguageId == context.Message.Language
-                                                                                        && c.NotificationTag == context.Message.NotificationTag);
+        //    var update = await _chatUpdateRepository.FirstOrDefaultAsync(x => x.Message.UpdateId == updateId);
 
-        // Use ChatGPT3 to generate the message
-        if (localizedMessage is null) return;
+        //    if (update is null)
+        //    {
+        //        _logger.LogWarning($"Received VoucherIssuingRequested. ChatUpdate  is null for the updateId: '{context.Message.ReferenceId}'");
+        //        return;
+        //    }
 
-        await _telegramProxy.SendMessageAsync(
-                                              user.ChatId,
-                                              string.Format(
-                                                            localizedMessage.Message,
-                                                            context.Message.Metadata["amount"],
-                                                            context.Message.Metadata["reward_amount"]));
+        //    // Notify
+        //    await _telegramProxy.SendMessageAsync(update.Message.Message.Chat.Id, "Good News! You won a amazing Voucher. Please complete the Payment to use it!");
+        //}
     }
 }

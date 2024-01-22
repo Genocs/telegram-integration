@@ -13,9 +13,9 @@ public class VoucherIssuedConsumer : IConsumer<VoucherIssued>
     private readonly IMongoDbRepository<ChatUpdate> _chatUpdateRepository;
 
     public VoucherIssuedConsumer(
-                                            ILogger<VoucherIssuedConsumer> logger,
-                                            ITelegramProxy telegramProxy,
-                                            IMongoDbRepository<ChatUpdate> chatUpdateRepository)
+                                 ILogger<VoucherIssuedConsumer> logger,
+                                 ITelegramProxy telegramProxy,
+                                 IMongoDbRepository<ChatUpdate> chatUpdateRepository)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _telegramProxy = telegramProxy ?? throw new ArgumentNullException(nameof(telegramProxy));
@@ -44,7 +44,7 @@ public class VoucherIssuedConsumer : IConsumer<VoucherIssued>
             }
 
             // Notify
-            await _telegramProxy.SendMessageAsync(update.Message.Message.Chat.Id, "VoucherIssuingRequested");
+            await _telegramProxy.SendMessageAsync(update.Message.Message.Chat.Id, "Good News! You won a amazing Voucher. Please complete the Payment to use it!");
 
             // Check the amount of vouchers issued for the user
             if (context.Message.Cost > 0)

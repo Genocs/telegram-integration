@@ -10,18 +10,18 @@ public class RewardNotifiedConsumer : IConsumer<RewardNotified>
 {
     private readonly ILogger<RewardNotifiedConsumer> _logger;
     private readonly ITelegramProxy _telegramProxy;
-    private readonly IMongoDbRepository<UserChat> _usersChatRepository;
+    private readonly IMongoDbRepository<ChatUpdate> _chatUpdateRepository;
     private readonly IMongoDbRepository<LocalizedMessage> _localizedMessagesRepository;
 
     public RewardNotifiedConsumer(
                                   ILogger<RewardNotifiedConsumer> logger,
                                   ITelegramProxy telegramProxy,
-                                  IMongoDbRepository<UserChat> usersChatRepository,
+                                  IMongoDbRepository<ChatUpdate> chatUpdateRepository,
                                   IMongoDbRepository<LocalizedMessage> localizedMessagesRepository)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _telegramProxy = telegramProxy ?? throw new ArgumentNullException(nameof(telegramProxy));
-        _usersChatRepository = usersChatRepository ?? throw new ArgumentNullException(nameof(usersChatRepository));
+        _chatUpdateRepository = chatUpdateRepository ?? throw new ArgumentNullException(nameof(chatUpdateRepository));
         _localizedMessagesRepository = localizedMessagesRepository ?? throw new ArgumentNullException(nameof(localizedMessagesRepository));
     }
 
@@ -29,35 +29,38 @@ public class RewardNotifiedConsumer : IConsumer<RewardNotified>
     {
         _logger.LogDebug("Received RewardNotified");
 
-        var user = await _usersChatRepository.FirstOrDefaultAsync(c => c.MemberId == context.Message.MemberId);
-
-        if (user is null)
+        if (string.IsNullOrEmpty(context.Message.ReferenceId))
         {
-            _logger.LogWarning($"Received RewardNotified. User chat is null for memberId: '{context.Message.MemberId}'");
+            _logger.LogWarning($"Received VoucherIssued. ReferenceId is null or empty");
             return;
         }
 
-        var localizedMessage = await _localizedMessagesRepository.FirstOrDefaultAsync(c => c.LanguageId == user.Language
-                                                                                        && c.NotificationTag == context.Message.NotificationTag);
-
-        // Use ChatGPT3 to generate the message
-        if (localizedMessage is null) return;
-
-        switch (context.Message.NotificationTag)
+        if (int.TryParse(context.Message.ReferenceId, out int updateId))
         {
-            case "voucher_issued":
-                await _telegramProxy.SendMessageAsync(user.ChatId,
-                                                        string.Format(localizedMessage.Message,
-                                                                        context.Message.Metadata["amount"],
-                                                                        context.Message.Metadata["reward_amount"]));
-                break;
+            var update = await _chatUpdateRepository.FirstOrDefaultAsync(x => x.Message.UpdateId == updateId);
 
-            case "reward_issued":
-                await _telegramProxy.SendMessageAsync(user.ChatId,
-                                                        string.Format(localizedMessage.Message,
-                                                                        context.Message.Metadata["amount"],
-                                                                        context.Message.Metadata["reward_amount"]));
-                break;
+            if (update is null)
+            {
+                _logger.LogWarning($"Received VoucherIssuingRequested. ChatUpdate  is null for the updateId: '{context.Message.ReferenceId}'");
+                return;
+            }
+
+            //switch (context.Message.NotificationTag)
+            //{
+            //    case "voucher_issued":
+            //        await _telegramProxy.SendMessageAsync(update.Message.Message.Chat.Id,
+            //                                                string.Format(localizedMessage.Message,
+            //                                                                context.Message.Metadata["amount"],
+            //                                                                context.Message.Metadata["reward_amount"]));
+            //        break;
+
+            //    case "reward_issued":
+            //        await _telegramProxy.SendMessageAsync(update.Message.Message.Chat.Id,
+            //                                                string.Format(localizedMessage.Message,
+            //                                                                context.Message.Metadata["amount"],
+            //                                                                context.Message.Metadata["reward_amount"]));
+            //        break;
+            //}
         }
     }
 }

@@ -160,7 +160,7 @@ public class TelegramProxy : ITelegramProxy
             var res = await botClient.SendPhotoAsync(
                                          chatId: message.PreCheckoutQuery.From.Id,
                                          photo: $"https://qrcode.tec-it.com/API/QRCode?data={message.PreCheckoutQuery.Id}",
-                                         caption: $"This is Your Voucher, please use it during the checkout. It will expire on: {DateTime.UtcNow.AddDays(10).ToLongDateString()}!");
+                                         caption: $"This is your Voucher! Please use it during the checkout. It will expire on: {DateTime.UtcNow.AddYears(1).ToLongDateString()}!");
 
             messageToProcess.Processed = true;
             await _chatUpdateRepository.UpdateAsync(messageToProcess);

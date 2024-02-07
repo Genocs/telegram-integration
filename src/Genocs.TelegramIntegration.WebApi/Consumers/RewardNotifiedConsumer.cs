@@ -41,7 +41,7 @@ public class RewardNotifiedConsumer : IConsumer<RewardNotified>
 
             if (update is null)
             {
-                _logger.LogWarning($"Received VoucherIssuingRequested. ChatUpdate  is null for the updateId: '{context.Message.ReferenceId}'");
+                _logger.LogWarning($"Received RewardNotified. ChatUpdate is null for the updateId: '{context.Message.ReferenceId}'");
                 return;
             }
 

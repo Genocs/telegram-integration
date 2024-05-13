@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Telegram.BotAPI" Version="6.9.2" />
+        <PackageReference Include="Telegram.BotAPI" Version="7.3.0" />
     </ItemGroup>
 
     <ItemGroup>

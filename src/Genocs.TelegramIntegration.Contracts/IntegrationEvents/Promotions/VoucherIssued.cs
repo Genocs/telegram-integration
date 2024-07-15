@@ -22,17 +22,17 @@ public record VoucherIssued
     /// <summary>
     /// The campaign code that determined the voucher issuing.
     /// </summary>
-    public string CampaignCode { get; init; }
+    public string? CampaignCode { get; init; }
 
     /// <summary>
     /// The issuer of the voucher.
     /// </summary>
-    public string Issuer { get; init; }
+    public string? Issuer { get; init; }
 
     /// <summary>
     /// The Voucher's owner.
     /// </summary>
-    public string MemberId { get; init; }
+    public string? OwnerId { get; init; }
 
     /// <summary>
     /// The voucher Id.
@@ -54,6 +54,6 @@ public record VoucherIssued
     /// </summary>
     public string Currency { get; init; } = "EUR";
     public DateTime ExpirationDate { get; init; }
-    public Dictionary<string, object> Metadata { get; init; }
+    public Dictionary<string, object>? Metadata { get; init; }
 
 }

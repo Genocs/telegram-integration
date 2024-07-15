@@ -63,7 +63,7 @@ Make sure you have following accounts:
 - [OpenAI](https://openai.com/) account
 - [NGROK](https://ngrok.com/) account
 - [Stripe](https://stripe.com/) account
-- [MonogDB](https://www.mongodb.com/) account
+- [MongoDB](https://www.mongodb.com/) account
 - [CloudAmqp](https://www.cloudamqp.com/) account
 
 On Azure you need to create the following resources:

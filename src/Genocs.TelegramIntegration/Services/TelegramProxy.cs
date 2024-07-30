@@ -1,7 +1,7 @@
 ﻿using Genocs.Integration.CognitiveServices.IntegrationEvents;
 using Genocs.Persistence.MongoDb.Repositories;
+using Genocs.TelegramIntegration.Configurations;
 using Genocs.TelegramIntegration.Domains;
-using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -239,6 +239,25 @@ public class TelegramProxy : ITelegramProxy
 
         BotClient botClient = new BotClient(_telegramOptions.Token!);
         return await botClient.SendMessageAsync(recipient, message);
+    }
+
+    /// <summary>
+    /// Proxy to send a message with an image to a recipient.
+    /// </summary>
+    /// <param name="recipient">The Recipient as chatId.</param>
+    /// <param name="imageUrl">The image url.</param>
+    /// <param name="caption">The image caption.</param>
+    /// <returns>The async task.</returns>
+    public async Task<Telegram.BotAPI.AvailableTypes.Message?> SendMessageWithImageAsync(long recipient, string? imageUrl, string? caption)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            _logger.LogError("SendMessageWithImageAsync: imageUrl is null or empty");
+            return null;
+        }
+
+        BotClient botClient = new BotClient(_telegramOptions.Token!);
+        return await botClient.SendPhotoAsync(chatId: recipient, photo: imageUrl, caption: caption);
     }
 
     private async Task<FormDataExtractionCompleted?> CallFormRecognizerAsync(string fileId, int updateId)

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Genocs.TelegramIntegration.Options;
+namespace Genocs.TelegramIntegration.Configurations;
 
 public class ApiClientSettings
 {

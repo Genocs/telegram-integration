@@ -10,7 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Genocs.Integration.CognitiveServices" Version="5.0.*" />
+        <PackageReference Include="Genocs.Integration.CognitiveServices" Version="5.0.3" />
         <PackageReference Include="Genocs.Persistence.MongoDb" Version="5.0.*" />
         <PackageReference Include="Genocs.Core" Version="5.0.*" />
         <PackageReference Include="MassTransit" Version="8.2.3" />

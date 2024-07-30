@@ -1,8 +1,8 @@
 ﻿using Genocs.Integration.CognitiveServices.Interfaces;
 using Genocs.Integration.CognitiveServices.Options;
 using Genocs.Integration.CognitiveServices.Services;
+using Genocs.TelegramIntegration.Configurations;
 using Genocs.TelegramIntegration.Contracts.Options;
-using Genocs.TelegramIntegration.Options;
 using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using MassTransit;

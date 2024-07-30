@@ -1,4 +1,4 @@
-﻿using Genocs.TelegramIntegration.Options;
+﻿using Genocs.TelegramIntegration.Configurations;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using OpenAI_API;

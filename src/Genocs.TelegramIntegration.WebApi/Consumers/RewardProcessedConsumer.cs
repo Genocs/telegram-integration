@@ -27,25 +27,25 @@ public class RewardProcessedConsumer : IConsumer<RewardProcessed>
         _logger.LogInformation("Received RewardProcessed");
         await Task.CompletedTask;
 
-        //if (string.IsNullOrEmpty(context.Message.ReferenceId))
-        //{
-        //    _logger.LogInformation($"Received RewardProcessed. ReferenceId is null or empty");
-        //    return;
-        //}
-
-        //if (int.TryParse(context.Message.ReferenceId, out int updateId))
-        //{
-
-        //    var update = await _chatUpdateRepository.FirstOrDefaultAsync(x => x.Message.UpdateId == updateId);
-
-        //    if (update is null)
-        //    {
-        //        _logger.LogWarning($"Received VoucherIssuingRequested. ChatUpdate  is null for the updateId: '{context.Message.ReferenceId}'");
-        //        return;
-        //    }
-
-        //    // Notify
-        //    await _telegramProxy.SendMessageAsync(update.Message.Message.Chat.Id, "Good News! You won a amazing Voucher. Please complete the Payment to use it!");
-        //}
+        // if (string.IsNullOrEmpty(context.Message.ReferenceId))
+        // {
+        //     _logger.LogInformation($"Received RewardProcessed. ReferenceId is null or empty");
+        //     return;
+        // }
+           
+        // if (int.TryParse(context.Message.ReferenceId, out int updateId))
+        // {
+           
+        //     var update = await _chatUpdateRepository.FirstOrDefaultAsync(x => x.Message.UpdateId == updateId);
+           
+        //     if (update is null)
+        //     {
+        //         _logger.LogWarning($"Received VoucherIssuingRequested. ChatUpdate  is null for the updateId: '{context.Message.ReferenceId}'");
+        //         return;
+        //     }
+           
+        //     // Notify
+        //     await _telegramProxy.SendMessageAsync(update.Message.Message.Chat.Id, "Good News! You won a amazing Voucher. Please complete the Payment to use it!");
+        // }
     }
 }

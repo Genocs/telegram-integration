@@ -1,4 +1,5 @@
 using Genocs.Persistence.MongoDb.Repositories;
+using Genocs.TelegramIntegration.Configurations;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Services;
 using Genocs.TelegramIntegration.Services.Interfaces;
@@ -11,26 +12,26 @@ namespace Genocs.TelegramIntegration.xUnitTests;
 
 public class ClientUnitTests
 {
-    //[Fact]
+    // [Fact]
     public void ConnectToClientTest()
     {
-        var mockTelegramOptions = new Mock<IOptions<Options.TelegramSettings>>();
+        var mockTelegramOptions = new Mock<IOptions<TelegramSettings>>();
 
         // We need to set the Value of IOptions to be the Options.TelegramSettings Class
-        Options.TelegramSettings telegramOptions = new Options.TelegramSettings() { Token = "TelegramSettingOption" };
+        TelegramSettings telegramOptions = new TelegramSettings() { Token = "TelegramSettingOption" };
         mockTelegramOptions.Setup(ap => ap.Value).Returns(telegramOptions);
 
         var mockOpenAIMiddleware = new Mock<IOpenAIMiddleware>();
-        var mockApiClientOptions = new Mock<IOptions<Options.ApiClientSettings>>();
+        var mockApiClientOptions = new Mock<IOptions<ApiClientSettings>>();
 
         // We need to set the Value of IOptions to be the Options.ApiClientSettings Class
-        Options.ApiClientSettings apiClientOptions = new Options.ApiClientSettings() { FormRecognizerUrl = "TelegramSettingOption" };
+        ApiClientSettings apiClientOptions = new ApiClientSettings() { FormRecognizerUrl = "TelegramSettingOption" };
         mockApiClientOptions.Setup(ap => ap.Value).Returns(apiClientOptions);
 
-        var mockStripeOptions = new Mock<IOptions<Options.StripeSettings>>();
+        var mockStripeOptions = new Mock<IOptions<StripeSettings>>();
 
         // We need to set the Value of IOptions to be the Options.ApiClientSettings Class
-        Options.StripeSettings stripeOptions = new Options.StripeSettings() { Token = "StripeOption" };
+        StripeSettings stripeOptions = new StripeSettings() { Token = "StripeOption" };
         mockStripeOptions.Setup(ap => ap.Value).Returns(stripeOptions);
 
         // mock logger

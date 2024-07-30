@@ -1,6 +1,4 @@
-﻿using Telegram.BotAPI.GettingUpdates;
-
-namespace Genocs.TelegramIntegration.Services.Interfaces;
+﻿namespace Genocs.TelegramIntegration.Services.Interfaces;
 
 /// <summary>
 /// OpenAI middleware interface definition.

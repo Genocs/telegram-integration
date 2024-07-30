@@ -39,8 +39,15 @@ public class VoucherIssuedConsumer : IConsumer<VoucherIssued>
 
             if (update is null)
             {
-                _logger.LogWarning($"Received VoucherIssuingRequested. ChatUpdate  is null for the updateId: '{context.Message.ReferenceId}'");
+                _logger.LogWarning($"Received VoucherIssuingRequested. ChatUpdate is null for the updateId: '{context.Message.ReferenceId}'");
                 return;
+            }
+
+            if(update.Message.Message is null)
+            {
+                _logger.LogWarning($"Received VoucherIssuingRequested. Message is null for the updateId: '{context.Message.ReferenceId}'");
+                return;
+
             }
 
             // Notify

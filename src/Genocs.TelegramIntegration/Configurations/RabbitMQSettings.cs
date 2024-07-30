@@ -1,4 +1,4 @@
-﻿namespace Genocs.TelegramIntegration.Options;
+﻿namespace Genocs.TelegramIntegration.Configurations;
 
 public class RabbitMQSettings
 {

@@ -1,22 +1,15 @@
 using Genocs.Core.Builders;
 using Genocs.Logging;
-using Genocs.Tracing;
 using Genocs.Metrics.AppMetrics;
 using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Infrastructure.Extensions;
+using Genocs.Tracing;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
-using Serilog.Events;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-    .MinimumLevel.Override("MassTransit", LogEventLevel.Information)
-    .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .CreateLogger();
+StaticLogger.EnsureInitialized();
 
 var builder = WebApplication.CreateBuilder(args);
 

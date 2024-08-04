@@ -45,6 +45,8 @@ public static class ServiceCollectionExtensions
             {
                 cfg.ConfigureEndpoints(context);
 
+                cfg.UseNServiceBusJsonSerializer();
+
                 // cfg.UseHealthCheck(context);
                 cfg.Host(
                          rabbitMQSettings.HostName,

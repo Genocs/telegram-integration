@@ -56,7 +56,7 @@ public class VoucherResponseEventConsumer : IConsumer<VoucherResponseEvent>
         // Send notification to the user by telegram
         foreach (var userChat in usersChat)
         {
-            string photoUrl = $"https://utuapi-voucher-dev.azurewebsites.net/api/vouchers/qrcode?data={voucherJournal?.CurrencyAlliance.BarcodeString}&type=barcode";
+            string photoUrl = $"https://utuapi-voucher-dev.azurewebsites.net/api/vouchers/qrcode?data={voucherJournal?.CurrencyAlliance.BarcodeString}&type=barcode&width=600&height=400";
             string caption = $"utu Voucher id: {voucherJournal?.CurrencyAlliance?.BarcodeString} -- Cost: €{voucherJournal?.VATRefundAmount} -- Value: €{voucherJournal?.Amount} -- email: {voucherJournal?.Email} -- date: {voucherJournal?.IssuedDate}";
             await _telegramProxy.SendMessageWithImageAsync(userChat.ChatId, photoUrl, caption);
             Task.Delay(500).Wait();

@@ -14,10 +14,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Genocs.Core" Version="6.0.*" />
-        <PackageReference Include="Genocs.Tracing" Version="6.0.*" />
         <PackageReference Include="Genocs.Logging" Version="6.0.*" />
         <PackageReference Include="Genocs.Metrics" Version="6.0.*" />
+        <PackageReference Include="Genocs.Tracing" Version="6.0.*" />
     </ItemGroup>
 
     <ItemGroup>

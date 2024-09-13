@@ -7,7 +7,7 @@ public record VoucherIssuingCompleted
     public string? ReferenceId { get; init; }
     public string? RequestId { get; init; }
     public string? ContextId { get; init; }
-    public string CampaignCode { get; init; }
-    public string Issuer { get; init; }
-    public string MemberId { get; init; }
+    public string? CampaignCode { get; init; }
+    public string? Issuer { get; init; }
+    public string? MemberId { get; init; }
 }

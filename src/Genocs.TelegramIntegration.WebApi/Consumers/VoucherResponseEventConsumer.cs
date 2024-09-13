@@ -27,18 +27,20 @@ public class VoucherResponseEventConsumer : IConsumer<VoucherResponseEvent>
 
     public async Task Consume(ConsumeContext<VoucherResponseEvent> context)
     {
+        _logger.LogInformation($"Received VoucherResponseEvent for voucher with code: '{context.Message.VoucherCode}'");
+
         // Get the voucher journal from the database - utu platform
         VoucherJournal voucherJournal = await _voucherJournalRepository.GetAsync(x => x.Code == context.Message.VoucherCode);
 
         if (voucherJournal is null)
         {
-            _logger.LogError("VoucherJournal not found");
+            _logger.LogError($"VoucherJournal not found for voucher with code: '{context.Message.VoucherCode}'");
             return;
         }
 
         if (voucherJournal.CurrencyAlliance is null)
         {
-            _logger.LogError("CurrencyAlliance not found");
+            _logger.LogError($"CurrencyAlliance details is null for voucher with code: '{context.Message.VoucherCode}'");
             return;
         }
 
@@ -53,16 +55,17 @@ public class VoucherResponseEventConsumer : IConsumer<VoucherResponseEvent>
 
         if (usersChat is null || !usersChat.Any())
         {
-            _logger.LogError("No user chat registered");
+            _logger.LogError($"No user chat registered for voucher with code: '{context.Message.VoucherCode}'. ExternalRequestId: '{voucherJournal.ExternalRequestId}'");
             return;
         }
 
         // Send notification to the user by telegram
         foreach (var userChat in usersChat)
         {
-            string photoUrl = $"https://barcode.tec-it.com/barcode.ashx?data={voucherJournal?.CurrencyAlliance.BarcodeString}&code=Code128";
-            string caption = $"utu Voucher id: {voucherJournal?.CurrencyAlliance?.BarcodeString}-- Cost: €{voucherJournal?.VATRefundAmount}-- Value: €{voucherJournal?.Amount}-- email: {voucherJournal?.Email}-- date: {voucherJournal?.IssuedDate}";
+            string photoUrl = $"https://utuapi-voucher-dev.azurewebsites.net/api/vouchers/qrcode?data={voucherJournal?.CurrencyAlliance.BarcodeString}&type=barcode&width=600&height=400";
+            string caption = $"utu Voucher id: {voucherJournal?.CurrencyAlliance?.BarcodeString} -- Cost: €{voucherJournal?.VATRefundAmount} -- Value: €{voucherJournal?.Amount} -- email: {voucherJournal?.Email} -- date: {voucherJournal?.IssuedDate}";
             await _telegramProxy.SendMessageWithImageAsync(userChat.ChatId, photoUrl, caption);
+            Task.Delay(500).Wait();
         }
     }
 }

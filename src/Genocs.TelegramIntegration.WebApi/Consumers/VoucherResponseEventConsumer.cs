@@ -30,7 +30,7 @@ public class VoucherResponseEventConsumer : IConsumer<VoucherResponseEvent>
         _logger.LogInformation($"Received VoucherResponseEvent for voucher with code: '{context.Message.VoucherCode}'");
 
         // Get the voucher journal from the database - utu platform
-        VoucherJournal voucherJournal = await _voucherJournalRepository.GetAsync(x => x.Code == context.Message.VoucherCode);
+        VoucherJournal? voucherJournal = await _voucherJournalRepository.FirstOrDefaultAsync(x => x.Code == context.Message.VoucherCode);
 
         if (voucherJournal is null)
         {

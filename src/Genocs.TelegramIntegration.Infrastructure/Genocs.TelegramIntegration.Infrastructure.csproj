@@ -10,9 +10,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="MassTransit.RabbitMQ" Version="8.2.5" />
-        <PackageReference Include="MassTransit.Interop.NServiceBus" Version="8.2.5" />        
-        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.8" />
+        <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.0" />
+        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.10" />
     </ItemGroup>
 
     <ItemGroup>

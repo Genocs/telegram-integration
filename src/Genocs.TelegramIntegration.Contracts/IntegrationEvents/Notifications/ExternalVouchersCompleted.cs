@@ -2,6 +2,9 @@
 // DO NOT CHANGE IT
 namespace UTU.Voucher.Contracts;
 
-public sealed record VoucherResponseEvent(string? VoucherCode, string? BarcodeFormat, string? BarcodeString, string? ExpirationDate, string? GiftCardCode, string? CaId, ResponseStatus? ResponseStatus);
-
-public sealed record ResponseStatus(string? ErrorCode, string? Message);
+/// <summary>
+/// This event is raised when a voucher issuing is completed.
+/// The event is issued outside the system.
+/// </summary>
+/// <param name="VoucherCode"></param>
+public sealed record VoucherResponseEvent(string? VoucherCode);

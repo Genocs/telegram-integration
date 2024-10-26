@@ -1,3 +1,4 @@
+using System.Reflection;
 using Genocs.Core.Builders;
 using Genocs.Logging;
 using Genocs.Metrics.AppMetrics;
@@ -5,26 +6,15 @@ using Genocs.Persistence.MongoDb.Extensions;
 using Genocs.TelegramIntegration.Infrastructure.Extensions;
 using Genocs.Tracing;
 using Serilog;
-using Serilog.Events;
-using System.Reflection;
 
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-    .MinimumLevel.Override("MassTransit", LogEventLevel.Information)
-    .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .CreateLogger();
+StaticLogger.EnsureInitialized();
 
-var builder = Host.CreateDefaultBuilder(args);
-
-builder.UseLogging();
-
-builder.ConfigureServices((hostContext, services) =>
+IHost host = Host.CreateDefaultBuilder(args)
+    .UseLogging()
+    .ConfigureServices((hostContext, services) =>
     {
         // Run the hosted service
         // services.AddHostedService<MainHostedService>();
-
         services
             .AddGenocs(hostContext.Configuration)
             .AddOpenTelemetry()
@@ -37,9 +27,8 @@ builder.ConfigureServices((hostContext, services) =>
 
         // Add services to the container.
         services.AddHttpClient();
-    });
+    }).Build();
 
-var host = builder.Build();
 await host.RunAsync();
 
 Log.CloseAndFlush();

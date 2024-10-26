@@ -40,22 +40,22 @@ public class VoucherResponseEventConsumer : IConsumer<VoucherResponseEvent>
 
         if (voucherJournal.CurrencyAlliance is null)
         {
-            _logger.LogError($"CurrencyAlliance details is null for voucher with code: '{context.Message.VoucherCode}'");
+            _logger.LogError($"External reference is null for voucher with code: '{context.Message.VoucherCode}'");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(voucherJournal.ExternalRequestId))
         {
-            _logger.LogError("ExternalRequestId is null or empty.");
+            _logger.LogInformation("ExternalRequestId is null or empty.");
             return;
         }
 
-        // Check if there is someone registered to receive the voucher notification
+        // Check if there a recipient to receive the voucher notification
         var usersChat = await _userChatRepository.GetAllListAsync(x => voucherJournal.ExternalRequestId.StartsWith(x.ExternalId));
 
         if (usersChat is null || !usersChat.Any())
         {
-            _logger.LogError($"No user chat registered for voucher with code: '{context.Message.VoucherCode}'. ExternalRequestId: '{voucherJournal.ExternalRequestId}'");
+            _logger.LogInformation($"No recipient for voucher with code: '{context.Message.VoucherCode}'. ExternalRequestId: '{voucherJournal.ExternalRequestId}'");
             return;
         }
 

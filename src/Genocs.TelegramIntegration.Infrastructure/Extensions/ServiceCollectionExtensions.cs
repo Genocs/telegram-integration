@@ -84,7 +84,6 @@ public static class ServiceCollectionExtensions
         services.Configure<AzureCognitiveServicesSettings>(configuration.GetSection(AzureCognitiveServicesSettings.Position));
         services.Configure<AzureStorageSettings>(configuration.GetSection(AzureStorageSettings.Position));
         services.Configure<ImageClassifierSettings>(configuration.GetSection(ImageClassifierSettings.Position));
-        services.Configure<AzureCognitiveServicesSettings>(configuration.GetSection(AzureCognitiveServicesSettings.Position));
 
         services.TryAddSingleton<IFormRecognizer, FormRecognizerService>();
         services.TryAddSingleton<IImageClassifier, ImageClassifierService>();

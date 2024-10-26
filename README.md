@@ -50,10 +50,17 @@
 ## Goals
 
 The library is based on the [Telegram Bot API](https://core.telegram.org/bots/api).
-The goal of this repository is to help developers/companies to implement solution based on Telegram Integration with AI services.
+The goal of this repository is to help developers/companies to implement solution based on Telegram Integration with OpenAI services.
 The solution contains integration with the following services:
- - Azure Cognitive Services to implement semantic ETL (Extraction Transformation and Loading).
- - OpenAI for the implementation of a chatbot that can be used to interact with the user.
+ - **OpenAI** for the implementation of a chatbot that can be used to interact with the user.
+ - **Stripe** for the implementation of a payment system that can be used to interact with the user.
+ - **MongoDB** for the implementation of a storage system that can be used to store the user data.
+ - **CloudAmqp** for the implementation of a message broker that can be used to send messages between the services.
+
+ > **Note:**
+ > The library do not contains reference to ETL (Extraction Transformation and Loading).
+ >
+ > ETL is out of the scope of this library and is moved on other repository.
 
 
 ## Prerequisites

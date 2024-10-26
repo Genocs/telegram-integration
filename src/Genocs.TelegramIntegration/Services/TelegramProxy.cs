@@ -368,7 +368,7 @@ public class TelegramProxy : ITelegramProxy
                 return response;
             }
 
-            response = await _openAIMiddleware.ValidateTaxFreeFormAsync(urlResource);
+            response = await _openAIMiddleware.ValidateDocumentAsync(urlResource);
         }
         catch (Exception ex)
         {

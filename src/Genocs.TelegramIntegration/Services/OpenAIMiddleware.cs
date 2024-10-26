@@ -18,7 +18,7 @@ public class OpenAIMiddleware : IOpenAIMiddleware
         _openAIOptions = openAIOptions.Value;
     }
 
-    public async Task<string?> ValidateTaxFreeFormAsync(string imageUrl)
+    public async Task<string?> ValidateDocumentAsync(string imageUrl)
     {
         var apiClient = new OpenAIAPI(_openAIOptions.APIKey);
 
@@ -27,8 +27,8 @@ public class OpenAIMiddleware : IOpenAIMiddleware
         chat.Model = Model.GPT4_Vision;
         chat.RequestParameters.MaxTokens = 128;
 
-        chat.AppendSystemMessage(@"You are an assistant to help identify whether the provided image is a taxfree form issued by the VROs. VRO companies are: 'Global Blue', 'Planet', 'Tax refund'. Only TaxFree form issued by one of those company are valid ones. Please replay to in a concise way.");
-        chat.AppendUserInput("Is it a valid image?", OpenAI_API.Chat.ChatMessage.ImageInput.FromImageUrl(imageUrl));
+        chat.AppendSystemMessage(_openAIOptions.SystemMessage);
+        chat.AppendUserInput("Is it a valid document?", OpenAI_API.Chat.ChatMessage.ImageInput.FromImageUrl(imageUrl));
 
         return await chat.GetResponseFromChatbotAsync();
     }

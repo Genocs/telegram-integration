@@ -5,7 +5,7 @@
 /// </summary>
 public interface IOpenAIMiddleware
 {
-    Task<string?> ValidateTaxFreeFormAsync(string imageUrl);
+    Task<string?> ValidateDocumentAsync(string documentUrl);
 
     Task<string?> ChatWithGPTAsync(string userChat);
 }

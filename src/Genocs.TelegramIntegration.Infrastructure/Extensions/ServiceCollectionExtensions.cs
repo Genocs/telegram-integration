@@ -1,6 +1,4 @@
-﻿using Genocs.Integration.CognitiveServices.Interfaces;
-using Genocs.Integration.CognitiveServices.Options;
-using Genocs.Integration.CognitiveServices.Services;
+﻿using System.Reflection;
 using Genocs.TelegramIntegration.Configurations;
 using Genocs.TelegramIntegration.Contracts.Options;
 using Genocs.TelegramIntegration.Services;
@@ -9,7 +7,6 @@ using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Reflection;
 
 namespace Genocs.TelegramIntegration.Infrastructure.Extensions;
 
@@ -78,15 +75,7 @@ public static class ServiceCollectionExtensions
     {
         services.Configure<TelegramSettings>(configuration.GetSection(TelegramSettings.Position));
         services.Configure<OpenAISettings>(configuration.GetSection(OpenAISettings.Position));
-        services.Configure<ApiClientSettings>(configuration.GetSection(ApiClientSettings.Position));
         services.Configure<StripeSettings>(configuration.GetSection(StripeSettings.Position));
-
-        services.Configure<AzureCognitiveServicesSettings>(configuration.GetSection(AzureCognitiveServicesSettings.Position));
-        services.Configure<AzureStorageSettings>(configuration.GetSection(AzureStorageSettings.Position));
-        services.Configure<ImageClassifierSettings>(configuration.GetSection(ImageClassifierSettings.Position));
-
-        services.TryAddSingleton<IFormRecognizer, FormRecognizerService>();
-        services.TryAddSingleton<IImageClassifier, ImageClassifierService>();
 
         services.TryAddScoped<ITelegramProxy, TelegramProxy>();
         services.TryAddScoped<IOpenAIMiddleware, OpenAIMiddleware>();

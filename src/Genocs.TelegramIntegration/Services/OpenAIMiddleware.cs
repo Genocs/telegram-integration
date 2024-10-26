@@ -1,8 +1,7 @@
 ﻿using Genocs.TelegramIntegration.Configurations;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.Extensions.Options;
-using OpenAI_API;
-using OpenAI_API.Models;
+using OpenAI.Chat;
 
 namespace Genocs.TelegramIntegration.Services;
 
@@ -20,26 +19,33 @@ public class OpenAIMiddleware : IOpenAIMiddleware
 
     public async Task<string?> ValidateDocumentAsync(string imageUrl)
     {
-        var apiClient = new OpenAIAPI(_openAIOptions.APIKey);
+        ChatClient chatClient = new ChatClient(model: "GPT4_Vision", _openAIOptions.APIKey);
 
         // Create Conversation
-        var chat = apiClient.Chat.CreateConversation();
-        chat.Model = Model.GPT4_Vision;
-        chat.RequestParameters.MaxTokens = 128;
+        ChatCompletionOptions options = new()
+        {
+            MaxOutputTokenCount = 128,
+            Temperature = 0.7F,
+        };
 
-        chat.AppendSystemMessage(_openAIOptions.SystemMessage);
-        chat.AppendUserInput("Is it a valid document?", OpenAI_API.Chat.ChatMessage.ImageInput.FromImageUrl(imageUrl));
+        List<ChatMessage> messages =
+        [
+            new SystemChatMessage(_openAIOptions.SystemMessage),
+            new UserChatMessage("Is it a valid document?", ChatMessageContentPart.CreateImagePart(new Uri(imageUrl), ChatImageDetailLevel.High))
+        ];
 
-        return await chat.GetResponseFromChatbotAsync();
+        ChatCompletion completion = await chatClient.CompleteChatAsync(messages, options);
+
+        return completion.Content[0].Text;
+
     }
 
     public async Task<string?> ChatWithGPTAsync(string userChat)
     {
-        var apiClient = new OpenAIAPI(_openAIOptions.APIKey);
+        ChatClient chatClient = new ChatClient(model: "gpt-4o", _openAIOptions.APIKey);
 
-        // Create Conversation
-        var result = await apiClient.Chat.CreateChatCompletionAsync(userChat);
+        ChatCompletion completion = await chatClient.CompleteChatAsync(userChat);
 
-        return result?.ToString();
+        return completion.Content[0].Text;
     }
 }

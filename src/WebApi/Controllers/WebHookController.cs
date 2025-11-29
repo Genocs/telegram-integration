@@ -20,7 +20,7 @@ public class WebHookController : ControllerBase
     [Consumes(MediaTypeNames.Application.Json)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> PostUpdates(object message)
+    public async Task<IActionResult> PostUpdatesAsync(object message)
     {
         // This is the only way I found to overcome the issue on deserialize
         // PaymentCheckout payload

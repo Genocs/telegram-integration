@@ -5,10 +5,10 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-env
 WORKDIR /src
-COPY ["src/Genocs.TelegramIntegration.Worker", "Genocs.TelegramIntegration.Worker/"]
-COPY ["src/Genocs.TelegramIntegration.Contracts", "Genocs.TelegramIntegration.Contracts/"]
-COPY ["src/Genocs.TelegramIntegration", "Genocs.TelegramIntegration/"]
-COPY ["src/Genocs.TelegramIntegration.Infrastructure", "Genocs.TelegramIntegration.Infrastructure/"]
+COPY ["src/Worker", "Worker/"]
+COPY ["src/Contracts", "Contracts/"]
+COPY ["src/TelegramIntegration", "TelegramIntegration/"]
+COPY ["src/Infrastructure", "Infrastructure/"]
 
 COPY ["Directory.Build.props", "Directory.Build.props"]
 COPY ["Directory.Build.targets", "Directory.Build.targets"]
@@ -18,14 +18,14 @@ COPY ["stylecop.json", "stylecop.json"]
 COPY ["LICENSE", "LICENSE"]
 COPY ["icon.png", "icon.png"]
 
-WORKDIR "/src/Genocs.TelegramIntegration.Worker"
+WORKDIR "/src/Worker"
 
-RUN dotnet restore "Genocs.TelegramIntegration.Worker.csproj"
+RUN dotnet restore "Host.csproj"
 
-RUN dotnet build "Genocs.TelegramIntegration.Worker.csproj" -c Release -o /app/build
+RUN dotnet build "Host.csproj" -c Release -o /app/build
 
 FROM build-env AS publish
-RUN dotnet publish "Genocs.TelegramIntegration.Worker.csproj" -c Release -o /app/publish
+RUN dotnet publish "Host.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app

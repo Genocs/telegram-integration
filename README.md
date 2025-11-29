@@ -1,4 +1,5 @@
 <!-- PROJECT SHIELDS -->
+
 [![License][license-shield]][license-url]
 [![Build][build-shield]][build-url]
 [![Packages][package-shield]][package-url]
@@ -44,7 +45,8 @@
     <img src="./assets/genocs-library-logo.png" alt="icon">
 </p>
 
-# Telegram Integration Library 
+# Telegram Integration Library
+
 .NET10.0 Library to be used to implement Telegram integration.
 
 ## Goals
@@ -52,19 +54,21 @@
 The library is based on the [Telegram Bot API](https://core.telegram.org/bots/api).
 The goal of this repository is to help developers/companies to implement solution based on Telegram Integration with OpenAI services.
 The solution contains integration with the following services:
- - **OpenAI** for the implementation of a chatbot that can be used to interact with the user.
- - **Stripe** for the implementation of a payment system that can be used to interact with the user.
- - **MongoDB** for the implementation of a storage system that can be used to store the user data.
- - **CloudAmqp** for the implementation of a message broker that can be used to send messages between the services.
 
- > **Note:**
- > The library do not contains reference to ETL (Extraction Transformation and Loading).
- >
- > ETL is out of the scope of this library and is moved on other repository.
+- **OpenAI** for the implementation of a chatbot that can be used to interact with the user.
+- **Stripe** for the implementation of a payment system that can be used to interact with the user.
+- **MongoDB** for the implementation of a storage system that can be used to store the user data.
+- **CloudAmqp** for the implementation of a message broker that can be used to send messages between the services.
 
+> **Note:**
+> The library do not contains reference to ETL (Extraction Transformation and Loading).
+>
+> ETL is out of the scope of this library and is moved on other repository.
 
 ## Prerequisites
+
 Make sure you have following accounts:
+
 - [Telegram](https://telegram.org/) account
 - [Azure](https://azure.microsoft.com/) account
 - [OpenAI](https://openai.com/) account
@@ -74,12 +78,13 @@ Make sure you have following accounts:
 - [CloudAmqp](https://www.cloudamqp.com/) account
 
 On Azure you need to create the following resources:
+
 - Azure Cognitive Services account
 - Azure Storage account
 
 ## Getting Started
 
-``` PS
+```bash
 # Restore packages
 dotnet restore
 
@@ -90,27 +95,26 @@ dotnet build
 dotnet test
 
 # Run webapi
-dotnet run --project .\src\Genocs.TelegramIntegration.WebApi
+dotnet run --project ./src/WebApi
 
 # Run worker
-dotnet run --project .\src\Genocs.TelegramIntegration.Worker
+dotnet run --project ./src/Worker
 
 # ** DOCKER ** #
 # Build docker image
-docker build -f webapi.dockerfile -t genocs/telegram_integration-webapi:3.0.1 -t genocs/telegram_integration-webapi:latest .
-docker build -f worker.dockerfile -t genocs/telegram_integration-worker:3.0.1 -t genocs/telegram_integration-worker:latest .
+docker build -f src/WebApi/Dockerfile -t genocs/telegram_integration-webapi:4.0.1 -t genocs/telegram_integration-webapi:latest .
+docker build -f src/Worker/Dockerfile -t genocs/telegram_integration-worker:4.0.1 -t genocs/telegram_integration-worker:latest .
 
 # Push image on dockerhub
-docker push genocs/telegram_integration-webapi:3.0.1
+docker push genocs/telegram_integration-webapi:4.0.1
 docker push genocs/telegram_integration-webapi:latest
 
-docker push genocs/telegram_integration-worker:3.0.1
+docker push genocs/telegram_integration-worker:4.0.1
 docker push genocs/telegram_integration-worker:latest
 
 # Run with docker compose
 docker-compose up
 ```
-
 
 ## How to use NGROK to expose the service to the internet
 
@@ -133,7 +137,6 @@ View Complete [Changelogs](https://github.com/Genocs/microservice-template/blob/
 - Facebook Page [@genocs](https://facebook.com/Genocs)
 - Youtube Channel [@genocs](https://youtube.com/c/genocs)
 
-
 ## Support
 
 Has this Project helped you learn something New? or Helped you at work?
@@ -141,9 +144,8 @@ Here are a few ways by which you can support.
 
 - ⭐ Leave a star!
 - 🥇 Recommend this project to your colleagues.
-- 🦸 Do consider endorsing me on LinkedIn for ASP.NET Core - [Connect via LinkedIn](https://www.linkedin.com/in/giovanni-emanuele-nocco-b31a5169/) 
+- 🦸 Do consider endorsing me on LinkedIn for ASP.NET Core - [Connect via LinkedIn](https://www.linkedin.com/in/giovanni-emanuele-nocco-b31a5169/)
 - ☕ If you want to support this project in the long run, [consider buying me a coffee](https://www.buymeacoffee.com/genocs)!
-  
 
 [![buy-me-a-coffee](https://raw.githubusercontent.com/Genocs/blazor-template/main/assets/buy-me-a-coffee.png "buy-me-a-coffee")](https://www.buymeacoffee.com/genocs)
 
@@ -158,6 +160,5 @@ This project exists thanks to all the people who contribute. [Submit your PR and
 Become a financial contributor and help me sustain the project. [Support the Project!](https://opencollective.com/genocs/contribute)
 
 <a href="https://opencollective.com/genocs"><img src="https://opencollective.com/genocs/individuals.svg?width=890"></a>
-
 
 ## Acknowledgements

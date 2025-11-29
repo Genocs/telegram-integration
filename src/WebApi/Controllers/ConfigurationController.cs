@@ -19,7 +19,7 @@ public class ConfigurationController : ControllerBase
     [Consumes(MediaTypeNames.Application.Json)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> PostLinkExternalId(LinkExternalIdCommand command)
+    public async Task<IActionResult> PostLinkExternalIdAsync(LinkExternalIdCommand command)
     {
         var res = await _mongoDbRepository.InsertOrUpdateAsync(new UserChat { ChatId = command.ChatId, ExternalId = command.ExternalId });
         return Accepted(res.Id);

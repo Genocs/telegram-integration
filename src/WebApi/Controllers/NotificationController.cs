@@ -26,7 +26,7 @@ public class NotificationController : ControllerBase
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> PostLinkExternalId(NotifyExternalIdCommand command)
+    public async Task<IActionResult> PostLinkExternalIdAsync(NotifyExternalIdCommand command)
     {
         var user = await _mongoDbRepository.GetAsync(c => c.ExternalId == command.ExternalId);
         if (user is null)

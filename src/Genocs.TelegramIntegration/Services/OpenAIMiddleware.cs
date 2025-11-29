@@ -1,8 +1,7 @@
 ﻿using Genocs.TelegramIntegration.Configurations;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.Extensions.Options;
-using OpenAI_API;
-using OpenAI_API.Models;
+using OpenAI.Chat;
 
 namespace Genocs.TelegramIntegration.Services;
 
@@ -18,28 +17,35 @@ public class OpenAIMiddleware : IOpenAIMiddleware
         _openAIOptions = openAIOptions.Value;
     }
 
-    public async Task<string?> ValidateTaxFreeFormAsync(string imageUrl)
+    public async Task<string?> ValidateDocumentAsync(string imageUrl)
     {
-        var apiClient = new OpenAIAPI(_openAIOptions.APIKey);
+        ChatClient chatClient = new ChatClient(model: "GPT4_Vision", _openAIOptions.APIKey);
 
         // Create Conversation
-        var chat = apiClient.Chat.CreateConversation();
-        chat.Model = Model.GPT4_Vision;
-        chat.RequestParameters.MaxTokens = 128;
+        ChatCompletionOptions options = new()
+        {
+            MaxOutputTokenCount = 128,
+            Temperature = 0.7F,
+        };
 
-        chat.AppendSystemMessage(@"You are an assistant to help identify whether the provided image is a taxfree form issued by the VROs. VRO companies are: 'Global Blue', 'Planet', 'Tax refund'. Only TaxFree form issued by one of those company are valid ones. Please replay to in a concise way.");
-        chat.AppendUserInput("Is it a valid image?", OpenAI_API.Chat.ChatMessage.ImageInput.FromImageUrl(imageUrl));
+        List<ChatMessage> messages =
+        [
+            new SystemChatMessage(_openAIOptions.SystemMessage),
+            new UserChatMessage("Is it a valid document?", ChatMessageContentPart.CreateImagePart(new Uri(imageUrl), ChatImageDetailLevel.High))
+        ];
 
-        return await chat.GetResponseFromChatbotAsync();
+        ChatCompletion completion = await chatClient.CompleteChatAsync(messages, options);
+
+        return completion.Content[0].Text;
+
     }
 
     public async Task<string?> ChatWithGPTAsync(string userChat)
     {
-        var apiClient = new OpenAIAPI(_openAIOptions.APIKey);
+        ChatClient chatClient = new ChatClient(model: "gpt-4o", _openAIOptions.APIKey);
 
-        // Create Conversation
-        var result = await apiClient.Chat.CreateChatCompletionAsync(userChat);
+        ChatCompletion completion = await chatClient.CompleteChatAsync(userChat);
 
-        return result?.ToString();
+        return completion.Content[0].Text;
     }
 }

@@ -22,12 +22,6 @@ public class ClientUnitTests
         mockTelegramOptions.Setup(ap => ap.Value).Returns(telegramOptions);
 
         var mockOpenAIMiddleware = new Mock<IOpenAIMiddleware>();
-        var mockApiClientOptions = new Mock<IOptions<ApiClientSettings>>();
-
-        // We need to set the Value of IOptions to be the Options.ApiClientSettings Class
-        ApiClientSettings apiClientOptions = new ApiClientSettings() { FormRecognizerUrl = "TelegramSettingOption" };
-        mockApiClientOptions.Setup(ap => ap.Value).Returns(apiClientOptions);
-
         var mockStripeOptions = new Mock<IOptions<StripeSettings>>();
 
         // We need to set the Value of IOptions to be the Options.ApiClientSettings Class
@@ -47,7 +41,6 @@ public class ClientUnitTests
                                                  mockTelegramOptions.Object,
                                                  mockLogger.Object,
                                                  mockOpenAIMiddleware.Object,
-                                                 mockApiClientOptions.Object,
                                                  mockStripeOptions.Object,
                                                  mockHttpClientFactory.Object,
                                                  mockChatUpdateRepository.Object);

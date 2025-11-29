@@ -1,5 +1,4 @@
 ﻿using Genocs.Fiscanner.Contracts.Notifications;
-using Genocs.TelegramIntegration.Services.Interfaces;
 using MassTransit;
 
 namespace Genocs.TelegramIntegration.WebApi.Consumers;
@@ -7,14 +6,12 @@ namespace Genocs.TelegramIntegration.WebApi.Consumers;
 public class LangChainResponseConsumer : IConsumer<LangChainResponse>
 {
     private readonly ILogger<LangChainResponseConsumer> _logger;
-    private readonly ITelegramProxy _telegramProxy;
 
     public LangChainResponseConsumer(
-                                    ILogger<LangChainResponseConsumer> logger,
-                                    ITelegramProxy telegramProxy)
+                                        ILogger<LangChainResponseConsumer> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _telegramProxy = telegramProxy ?? throw new ArgumentNullException(nameof(telegramProxy));
+
     }
 
     public async Task Consume(ConsumeContext<LangChainResponse> context)

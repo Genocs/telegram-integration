@@ -1,13 +1,9 @@
-﻿using Genocs.Integration.CognitiveServices.IntegrationEvents;
-using Genocs.Persistence.MongoDb.Repositories;
+﻿using Genocs.Persistence.MongoDb.Repositories;
 using Genocs.TelegramIntegration.Configurations;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
 using Telegram.BotAPI;
 using Telegram.BotAPI.AvailableMethods;
 using Telegram.BotAPI.GettingUpdates;
@@ -22,14 +18,12 @@ public class TelegramProxy : ITelegramProxy
     private readonly IMongoDbRepository<ChatUpdate> _chatUpdateRepository;
     private readonly TelegramSettings _telegramOptions;
     private readonly IOpenAIMiddleware _openAIMiddleware;
-    private readonly ApiClientSettings _apiClientOptions;
     private readonly StripeSettings _stripeOptions;
 
     public TelegramProxy(
                          IOptions<TelegramSettings> telegramOptions,
                          ILogger<TelegramProxy> logger,
                          IOpenAIMiddleware openAIMiddleware,
-                         IOptions<ApiClientSettings> apiClientOptions,
                          IOptions<StripeSettings> stripeOptions,
                          IHttpClientFactory httpClientFactory,
                          IMongoDbRepository<ChatUpdate> chatUpdateRepository)
@@ -39,11 +33,6 @@ public class TelegramProxy : ITelegramProxy
 
         _telegramOptions = telegramOptions.Value;
         _openAIMiddleware = openAIMiddleware;
-
-        if (apiClientOptions == null) throw new ArgumentNullException(nameof(apiClientOptions));
-        if (apiClientOptions.Value == null) throw new ArgumentNullException(nameof(apiClientOptions.Value));
-
-        _apiClientOptions = apiClientOptions.Value;
 
         if (stripeOptions == null) throw new ArgumentNullException(nameof(stripeOptions));
         if (stripeOptions.Value == null) throw new ArgumentNullException(nameof(stripeOptions.Value));
@@ -182,7 +171,6 @@ public class TelegramProxy : ITelegramProxy
             chatResponse = await CheckImageWithChatGPTAsync(fileId);
             await SendMessageAsync(message.Message.Chat.Id, chatResponse);
 
-            await CallFormRecognizerAsync(fileId, message.UpdateId);
             messageToProcess.Processed = true;
             await _chatUpdateRepository.UpdateAsync(messageToProcess);
             return;
@@ -260,62 +248,6 @@ public class TelegramProxy : ITelegramProxy
         return await botClient.SendPhotoAsync(chatId: recipient, photo: imageUrl, caption: caption);
     }
 
-    private async Task<FormDataExtractionCompleted?> CallFormRecognizerAsync(string fileId, int updateId)
-    {
-        try
-        {
-            BotClient botClient = new BotClient(_telegramOptions.Token!);
-
-            var botFile = await botClient.GetFileAsync(fileId);
-            if (botFile is null)
-            {
-                _logger.LogError("Resource: '{botFile}' is null or empty", botFile);
-                return null;
-            }
-
-            string urlResource = $"https://api.telegram.org/file/bot{_telegramOptions.Token}/{botFile.FilePath}";
-
-            if (string.IsNullOrEmpty(urlResource))
-            {
-                _logger.LogError("Resource: '{urlResource}' is null or empty", urlResource);
-                return null;
-            }
-
-            // TODO: Refactor this code with Genocs HTTP Client
-            using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, _apiClientOptions.FormRecognizerUrl)
-            {
-                Headers =
-                {
-                    { HeaderNames.Accept, "application/json" }
-                },
-                Content = JsonContent.Create(new
-                {
-                    RequestId = Guid.NewGuid().ToString(),
-                    ContextId = Guid.NewGuid().ToString(),
-                    ReferenceId = updateId.ToString(),
-                    Url = urlResource,
-                })
-            };
-
-            using var httpClient = _httpClientFactory.CreateClient();
-            var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
-
-            if (httpResponseMessage.IsSuccessStatusCode)
-            {
-                await using var contentStream = await httpResponseMessage.Content.ReadAsStreamAsync();
-                return await JsonSerializer.DeserializeAsync<FormDataExtractionCompleted?>(contentStream, options: new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            }
-
-            // End TODO
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(500, ex, "ProcessMessageAsync exception while processing CallFormRecognizerAsync");
-        }
-
-        return null;
-    }
-
     public async Task CheckoutAsync(string orderId, long recipient, decimal amount, string currency = "EUR")
     {
         if (amount <= 0)
@@ -368,7 +300,7 @@ public class TelegramProxy : ITelegramProxy
                 return response;
             }
 
-            response = await _openAIMiddleware.ValidateTaxFreeFormAsync(urlResource);
+            response = await _openAIMiddleware.ValidateDocumentAsync(urlResource);
         }
         catch (Exception ex)
         {

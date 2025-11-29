@@ -2,7 +2,7 @@
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using MassTransit;
-using UTU.Voucher.Contracts;
+using Genocs.Voucher.Contracts;
 
 namespace Genocs.TelegramIntegration.WebApi.Consumers;
 
@@ -29,7 +29,7 @@ public class VoucherResponseEventConsumer : IConsumer<VoucherResponseEvent>
     {
         _logger.LogInformation($"Received VoucherResponseEvent for voucher with code: '{context.Message.VoucherCode}'");
 
-        // Get the voucher journal from the database - utu platform
+        // Get the voucher journal from the database
         VoucherJournal voucherJournal = await _voucherJournalRepository.GetAsync(x => x.Code == context.Message.VoucherCode);
 
         if (voucherJournal is null)
@@ -38,33 +38,27 @@ public class VoucherResponseEventConsumer : IConsumer<VoucherResponseEvent>
             return;
         }
 
-        if (voucherJournal.CurrencyAlliance is null)
+        if (string.IsNullOrWhiteSpace(voucherJournal.RequestId))
         {
-            _logger.LogError($"CurrencyAlliance details is null for voucher with code: '{context.Message.VoucherCode}'");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(voucherJournal.ExternalRequestId))
-        {
-            _logger.LogError("ExternalRequestId is null or empty.");
+            _logger.LogError("RequestId is null or empty.");
             return;
         }
 
         // Check if there is someone registered to receive the voucher notification
-        var usersChat = await _userChatRepository.GetAllListAsync(x => voucherJournal.ExternalRequestId.StartsWith(x.ExternalId));
+        var usersChat = await _userChatRepository.GetAllListAsync(x => voucherJournal.RequestId.StartsWith(x.ExternalId));
 
         if (usersChat is null || !usersChat.Any())
         {
-            _logger.LogError($"No user chat registered for voucher with code: '{context.Message.VoucherCode}'. ExternalRequestId: '{voucherJournal.ExternalRequestId}'");
+            _logger.LogError($"No user chat registered for voucher with code: '{context.Message.VoucherCode}'. RequestId: '{voucherJournal.RequestId}'");
             return;
         }
 
         // Send notification to the user by telegram
         foreach (var userChat in usersChat)
         {
-            string photoUrl = $"https://utuapi-voucher-dev.azurewebsites.net/api/vouchers/qrcode?data={voucherJournal?.CurrencyAlliance.BarcodeString}&type=barcode&width=600&height=400";
-            string caption = $"utu Voucher id: {voucherJournal?.CurrencyAlliance?.BarcodeString} -- Cost: €{voucherJournal?.VATRefundAmount} -- Value: €{voucherJournal?.Amount} -- email: {voucherJournal?.Email} -- date: {voucherJournal?.IssuedDate}";
-            await _telegramProxy.SendMessageWithImageAsync(userChat.ChatId, photoUrl, caption);
+            string imageUrl = $"<your_api_url>/api/vouchers/?data={voucherJournal?.Code}";
+            string caption = $"Voucher Code: {voucherJournal?.Code} -- Cost: €{voucherJournal?.Cost} -- Value: €{voucherJournal?.Value} -- email: {voucherJournal?.Email} -- date: {voucherJournal?.IssuedDate}";
+            await _telegramProxy.SendMessageWithImageAsync(userChat.ChatId, imageUrl, caption);
             Task.Delay(500).Wait();
         }
     }

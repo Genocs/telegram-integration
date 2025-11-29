@@ -47,7 +47,7 @@
 
 # Telegram Integration Library
 
-.NET10.0 Library to be used to implement Telegram integration.
+.NET10 Library to be used to implement Telegram integration.
 
 ## Goals
 
@@ -56,7 +56,7 @@ The goal of this repository is to help developers/companies to implement solutio
 The solution contains integration with the following services:
 
 - **OpenAI** for the implementation of a chatbot that can be used to interact with the user.
-- **Stripe** for the implementation of a payment system that can be used to interact with the user.
+- **Stripe** for the implementation of a payment system.
 - **MongoDB** for the implementation of a storage system that can be used to store the user data.
 - **CloudAmqp** for the implementation of a message broker that can be used to send messages between the services.
 
@@ -76,11 +76,6 @@ Make sure you have following accounts:
 - [Stripe](https://stripe.com/) account
 - [MongoDB](https://www.mongodb.com/) account
 - [CloudAmqp](https://www.cloudamqp.com/) account
-
-On Azure you need to create the following resources:
-
-- Azure Cognitive Services account
-- Azure Storage account
 
 ## Getting Started
 

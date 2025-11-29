@@ -19,7 +19,7 @@ public class OpenAIMiddleware : IOpenAIMiddleware
 
     public async Task<string?> ValidateDocumentAsync(string imageUrl)
     {
-        ChatClient chatClient = new ChatClient(model: "GPT4_Vision", _openAIOptions.APIKey);
+        ChatClient chatClient = new ChatClient(model: "gpt-4.1-mini", _openAIOptions.APIKey);
 
         // Create Conversation
         ChatCompletionOptions options = new()
@@ -42,7 +42,7 @@ public class OpenAIMiddleware : IOpenAIMiddleware
 
     public async Task<string?> ChatWithGPTAsync(string userChat)
     {
-        ChatClient chatClient = new ChatClient(model: "gpt-4o", _openAIOptions.APIKey);
+        ChatClient chatClient = new ChatClient(model: "gpt-5-nano", _openAIOptions.APIKey);
 
         ChatCompletion completion = await chatClient.CompleteChatAsync(userChat);
 

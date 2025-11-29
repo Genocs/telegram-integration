@@ -1,5 +1,4 @@
 ﻿using Genocs.Persistence.MongoDb.Domain.Repositories;
-using Genocs.Persistence.MongoDb.Repositories;
 using Genocs.TelegramIntegration.Configurations;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Services.Interfaces;
@@ -53,7 +52,7 @@ public class TelegramProxy : ITelegramProxy
     {
         // You need a BotClient instance if you want access to the Bot API methods.
 
-        BotClient botClient = new BotClient(_telegramOptions.Token!);
+        ITelegramBotClient botClient = new TelegramBotClient(_telegramOptions.Token!);
 
         var updates = botClient.GetUpdates();
 
@@ -139,7 +138,7 @@ public class TelegramProxy : ITelegramProxy
         // Payment
         if (message.PreCheckoutQuery != null)
         {
-            BotClient botClient = new BotClient(_telegramOptions.Token!);
+            ITelegramBotClient botClient = new TelegramBotClient(_telegramOptions.Token!);
             botClient.AnswerPreCheckoutQuery(message.PreCheckoutQuery.Id, true);
 
             // Notify to the platform the payment is completed
@@ -226,7 +225,7 @@ public class TelegramProxy : ITelegramProxy
             return null;
         }
 
-        BotClient botClient = new BotClient(_telegramOptions.Token!);
+        ITelegramBotClient botClient = new TelegramBotClient(_telegramOptions.Token!);
         return await botClient.SendMessageAsync(recipient, message);
     }
 
@@ -245,7 +244,7 @@ public class TelegramProxy : ITelegramProxy
             return null;
         }
 
-        BotClient botClient = new BotClient(_telegramOptions.Token!);
+        ITelegramBotClient botClient = new TelegramBotClient(_telegramOptions.Token!);
         return await botClient.SendPhotoAsync(chatId: recipient, photo: imageUrl, caption: caption);
     }
 
@@ -257,14 +256,14 @@ public class TelegramProxy : ITelegramProxy
             return;
         }
 
-        BotClient botClient = new BotClient(_telegramOptions.Token!);
+        ITelegramBotClient botClient = new TelegramBotClient(_telegramOptions.Token!);
 
         SendInvoiceArgs sendInvoiceArgs = new SendInvoiceArgs(
                                                               chatId: recipient,
                                                               title: "Genocs Voucher",
                                                               description: $"Voucher of {amount} EUR!",
                                                               payload: orderId,
-                                                              providerToken: _stripeOptions.Token!,
+                                                              //providerToken: _stripeOptions.Token!,
                                                               currency: currency,
                                                               prices: new List<LabeledPrice>
                                                               {
@@ -286,7 +285,7 @@ public class TelegramProxy : ITelegramProxy
 
         try
         {
-            BotClient botClient = new BotClient(_telegramOptions.Token!);
+            ITelegramBotClient botClient = new TelegramBotClient(_telegramOptions.Token!);
 
             var botFile = await botClient.GetFileAsync(fileId);
             if (botFile is null)

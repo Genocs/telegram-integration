@@ -1,4 +1,4 @@
 #!/bin/bash
 export ASPNETCORE_ENVIRONMENT=local
-cd src/Genocs.Core.WebApi
+cd src/WebApi
 dotnet run

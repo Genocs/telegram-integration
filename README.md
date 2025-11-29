@@ -45,7 +45,7 @@
 </p>
 
 # Telegram Integration Library 
-.NET8.0 Library to be used to implement Telegram integration.
+.NET10.0 Library to be used to implement Telegram integration.
 
 ## Goals
 

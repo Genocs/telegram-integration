@@ -3,4 +3,4 @@ services:
     image: genocs/telegram_integration-webapi
     build:
       context: .
-      dockerfile: webapi.dockerfile
+      dockerfile: src/WebApi/Dockerfile

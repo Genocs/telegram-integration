@@ -57,7 +57,7 @@ if ($asExists -eq $false) {
         --name=$appserviceName `
         --resource-group=$resourceGroupName `
         --plan=$appservicePlanName `
-        --runtime="DOTNETCORE|7.0" `
+        --runtime="DOTNETCORE|10.0" `
         --deployment-local-git `
         --output=jsonc
 }

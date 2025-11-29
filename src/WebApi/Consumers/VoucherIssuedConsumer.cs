@@ -1,5 +1,5 @@
 ﻿using Genocs.Fiscanner.Contracts.Promotions;
-using Genocs.Persistence.MongoDb.Repositories;
+using Genocs.Persistence.MongoDb.Domain.Repositories;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Services.Interfaces;
 using MassTransit;

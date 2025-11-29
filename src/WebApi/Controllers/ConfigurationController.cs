@@ -1,7 +1,7 @@
-using Genocs.Persistence.MongoDb.Repositories;
+using System.Net.Mime;
+using Genocs.Persistence.MongoDb.Domain.Repositories;
 using Genocs.TelegramIntegration.Domains;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Mime;
 
 namespace Genocs.TelegramIntegration.WebApi.Controllers;
 

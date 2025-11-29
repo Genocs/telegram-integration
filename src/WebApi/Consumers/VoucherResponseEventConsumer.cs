@@ -1,8 +1,8 @@
-﻿using Genocs.Persistence.MongoDb.Repositories;
+﻿using Genocs.Persistence.MongoDb.Domain.Repositories;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Services.Interfaces;
-using MassTransit;
 using Genocs.Voucher.Contracts;
+using MassTransit;
 
 namespace Genocs.TelegramIntegration.WebApi.Consumers;
 

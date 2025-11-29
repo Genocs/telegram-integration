@@ -1,4 +1,4 @@
-using Genocs.Persistence.MongoDb.Repositories;
+using Genocs.Persistence.MongoDb.Domain.Repositories;
 using Genocs.TelegramIntegration.Configurations;
 using Genocs.TelegramIntegration.Domains;
 using Genocs.TelegramIntegration.Services;

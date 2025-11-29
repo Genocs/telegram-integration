@@ -1,5 +1,5 @@
 ﻿using Genocs.Core.Domain.Repositories;
-using Genocs.Persistence.MongoDb.Repositories.Clean;
+using Genocs.Persistence.MongoDb.Domain.Entities;
 using MongoDB.Bson;
 using Telegram.BotAPI.GettingUpdates;
 

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <PackageId>Genocs.TelegramIntegration.Infrastructure</PackageId>
         <RootNamespace>Genocs.TelegramIntegration.Infrastructure</RootNamespace>
         <AssemblyName>Genocs.TelegramIntegration.Infrastructure</AssemblyName>
@@ -10,7 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.0" />
+        <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.6" />
         <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.10" />
     </ItemGroup>
 

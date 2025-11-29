@@ -2,21 +2,15 @@
 
 namespace Genocs.TelegramIntegration.Worker;
 
-public class MainHostedService : IHostedService, IDisposable
+public class MainHostedService(ILogger<MainHostedService> logger, ITelegramProxy proxy) : IHostedService, IDisposable
 {
+    private readonly ILogger<MainHostedService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ITelegramProxy _proxy = proxy ?? throw new ArgumentNullException(nameof(proxy));
 
-    private readonly ILogger<MainHostedService> _logger;
-    private readonly ITelegramProxy _proxy;
     private Timer? _timer = null;
     private bool _disposed = false;
 
     private int _executionCount;
-
-    public MainHostedService(ILogger<MainHostedService> logger, ITelegramProxy proxy)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _proxy = proxy ?? throw new ArgumentNullException(nameof(proxy));
-    }
 
     public void Dispose()
     {
@@ -40,7 +34,6 @@ public class MainHostedService : IHostedService, IDisposable
                             TimeSpan.FromSeconds(20));
 
         return Task.CompletedTask;
-
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

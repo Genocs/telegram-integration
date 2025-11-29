@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <PackageId>Genocs.TelegramIntegration.WebApi</PackageId>
         <RootNamespace>Genocs.TelegramIntegration.WebApi</RootNamespace>
         <AssemblyName>Genocs.TelegramIntegration.WebApi</AssemblyName>
@@ -14,8 +14,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Genocs.Metrics" Version="6.2.*" />
-        <PackageReference Include="Genocs.Tracing" Version="6.2.*" />
+        <PackageReference Include="Genocs.Metrics" Version="8.0.*" />
+        <PackageReference Include="Genocs.Tracing" Version="8.0.*" />
     </ItemGroup>
 
     <ItemGroup>

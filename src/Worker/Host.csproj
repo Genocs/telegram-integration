@@ -23,8 +23,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Genocs.TelegramIntegration.Infrastructure\Genocs.TelegramIntegration.Infrastructure.csproj" />
-        <ProjectReference Include="..\Genocs.TelegramIntegration\Genocs.TelegramIntegration.csproj" />
+        <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+        <ProjectReference Include="..\TelegramIntegration\TelegramIntegration.csproj" />
     </ItemGroup>
 
 </Project>

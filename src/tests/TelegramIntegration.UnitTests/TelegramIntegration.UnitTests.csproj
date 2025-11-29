@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Genocs.TelegramIntegration\Genocs.TelegramIntegration.csproj" />
+        <ProjectReference Include="..\..\TelegramIntegration\TelegramIntegration.csproj" />
     </ItemGroup>
 
     <ItemGroup>

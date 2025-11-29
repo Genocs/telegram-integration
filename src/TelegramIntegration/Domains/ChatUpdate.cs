@@ -9,17 +9,12 @@ namespace Genocs.TelegramIntegration.Domains;
 /// This is the chat object received from the webhook.
 /// </summary>
 [TableMapping("ChatUpdates")]
-public class ChatUpdate : Core.Domain.Entities.Entity<ObjectId>, IMongoDbEntity
+public class ChatUpdate(Update update) : Core.Domain.Entities.Entity<ObjectId>, IMongoDbEntity
 {
     /// <summary>
     /// The chat message object received from the webhook.
     /// </summary>
-    public Update Message { get; private set; }
+    public Update Message { get; private set; } = update;
 
     public bool Processed { get; set; }
-
-    public ChatUpdate(Update update)
-    {
-        Message = update;
-    }
 }

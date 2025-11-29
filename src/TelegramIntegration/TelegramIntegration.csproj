@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Genocs.TelegramIntegration.Contracts\Genocs.TelegramIntegration.Contracts.csproj" />
+        <ProjectReference Include="..\Contracts\Contracts.csproj" />
     </ItemGroup>
 
 </Project>
